@@ -19,6 +19,12 @@ import {
 
 import { NoiseMapGenerator } from "../NoiseMapGenerator";
 
+export enum EntityType {
+  Sun,
+  Planet,
+  Moon,
+}
+
 type TerrainMaps = {
   heightMap: CanvasRenderingContext2D;
   map: CanvasRenderingContext2D;
@@ -38,22 +44,26 @@ export type EntityParams = {
   castShadow?: boolean;
   receiveShadow?: boolean;
   texturePath?: string;
+  onShow?: (id: number) => void;
 };
 
 export abstract class Entity {
   public id: number;
+  public entityType: EntityType;
   public entity: Group;
   public params: EntityParams;
   public radius: number;
   public sphere!: Mesh;
+  public orbit!: Material;
 
   private loader = new TextureLoader();
 
   protected textureWidth: number;
   protected textureHeight: number;
 
-  constructor(id: number, radius: number, params: EntityParams) {
+  constructor(id: number, entityType: EntityType, radius: number, params: EntityParams) {
     this.id = id;
+    this.entityType = entityType;
     this.radius = radius;
     this.params = params;
 
@@ -127,11 +137,17 @@ export abstract class Entity {
     if (this.params.orbitEntity) {
       const orbitSpeed = this.params.orbitSpeed;
       const orbitDirection = this.params.orbitDirection;
-      this.entity.rotation.z += orbitSpeed * orbitDirection;
+      this.entity.rotation.y += orbitSpeed * orbitDirection;
     }
 
     if (this.params.spinSpeed) {
       this.sphere.rotation.y += this.params.spinSpeed;
+    }
+  }
+
+  public show() {
+    if (this.params.onShow) {
+      this.params.onShow(this.id);
     }
   }
 
@@ -209,14 +225,14 @@ export abstract class Entity {
     var segmentCount = 128;
     const geometry = new BufferGeometry();
     const verts = [];
-    const material = new LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
+    this.orbit = new LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
 
     for (var i = 0; i <= segmentCount; i++) {
       var theta = (i / segmentCount) * Math.PI * 2;
-      verts.push(Math.cos(theta) * radius, Math.sin(theta) * radius, 0);
+      verts.push(Math.cos(theta) * radius, 0, Math.sin(theta) * radius);
     }
     const vertices = new Float32Array(verts);
     geometry.setAttribute("position", new BufferAttribute(vertices, 3));
-    return new Line(geometry, material);
+    return new Line(geometry, this.orbit);
   }
 }

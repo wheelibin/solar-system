@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  AxesHelper,
   Camera,
   Clock,
   Color,
@@ -9,17 +10,17 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { Entity } from "./planets/Entity";
+import { Entity, EntityParams, EntityType } from "./planets/Entity";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-// import { FlyControls } from "three/examples/jsm/controls/FlyControls";
 import Stats from "three/examples/jsm/libs/stats.module";
+import { GUI } from "three/examples/jsm/libs/dat.gui.module";
+
+import { SolarSystem, SolarSystemGenerator } from "./SolarSystemGenerator";
 import { addPointLight } from "./lighting";
 import { Moon } from "./planets/Moon";
-// import { Earth } from "./planets/Earth";
 import { ClassM } from "./planets/ClassM";
-
 import { Sun } from "./planets/Sun";
-import { SolarSystem, SolarSystemGenerator } from "./SolarSystemGenerator";
+import { Earth } from "./planets/Earth";
 
 let solarSystem: SolarSystem;
 
@@ -29,8 +30,9 @@ let clock = new Clock();
 let bodies: Entity[] = [];
 let renderer: WebGLRenderer;
 let orbitControls: OrbitControls;
-// let flyControls: FlyControls;
 let stats: Stats;
+let showPlanetId = -1;
+let cameraInitialPosition: [number, number, number];
 
 const SEED = 2;
 const sunColour = 0xf7e096;
@@ -65,8 +67,8 @@ export const init = async () => {
   // Camera
   camera = new Camera();
   camera = new PerspectiveCamera(25, window.innerWidth / window.innerHeight, 50, 1e7);
-  // camera.position.set(solarSystem.suns[0].radius, solarSystem.suns[0].radius, solarSystem.suns[0].radius * 8);
-  camera.position.set(0, -(solarSystem.suns[0].radius * 60), solarSystem.suns[0].radius * 40);
+  cameraInitialPosition = [0, solarSystem.suns[0].radius * 6, solarSystem.suns[0].radius * 20];
+  camera.position.set(...cameraInitialPosition);
 
   camera.lookAt(0, 0, 0);
 
@@ -78,17 +80,46 @@ export const init = async () => {
   document.body.appendChild(stats.dom);
 
   // Lighting
-  // scene.add(new AmbientLight(0xffffff, 0.15));
-  scene.add(new AmbientLight(0xffffff, 1));
+  scene.add(new AmbientLight(0xffffff, 0.15));
+  // scene.add(new AmbientLight(0xffffff, 1));
+
+  // var axesHelper = new AxesHelper(5000);
+  // scene.add(axesHelper);
 
   addPointLight(scene, {
     colour: sunColour,
     intensity: 1,
     position: new Vector3(0, 0, 0),
-    showHelper: true,
   });
 
   await createSolarSystem();
+
+  // UI
+  const gui = new GUI();
+
+  const buttonHandlers = {
+    resetView: () => {
+      showPlanetId = -1;
+      camera.position.set(...cameraInitialPosition);
+      orbitControls = new OrbitControls(camera, renderer.domElement);
+    },
+    toggleOrbits: () => {
+      for (const body of bodies) {
+        if (body.orbit) {
+          body.orbit.opacity = body.orbit.opacity === 0 ? 0.5 : 0;
+        }
+      }
+    },
+  };
+
+  const viewActionsFolder = gui.addFolder("View Actions");
+  viewActionsFolder.open();
+  viewActionsFolder.add(buttonHandlers, "toggleOrbits").name("Toggle Orbits");
+  viewActionsFolder.add(buttonHandlers, "resetView").name("Reset View");
+  for (const planet of bodies.filter((b) => b.entityType === EntityType.Planet)) {
+    const ssPlanet = solarSystem.planets.find((p) => p.id === planet.id);
+    viewActionsFolder.add(planet, "show").name(ssPlanet?.name || "A Planet");
+  }
 };
 
 export const animate = () => {
@@ -99,25 +130,29 @@ export const animate = () => {
   });
 
   orbitControls.update();
-  // flyControls.update(clock.getDelta());
   stats.update();
 
-  // const planet1 = bodies.find((b) => b.id === 2);
-  // if (planet1) {
-  // const pos = new Vector3();
-  // planet1.sphere.getWorldPosition(pos);
-  // orbitControls.target.set(pos.x, pos.y, pos.z);
-  // const camPos = pos.multiplyScalar(1.5);
-  // camera.position.set(camPos.x, camPos.y, camPos.z);
-  // camera.lookAt(pos.x, pos.y, pos.z );
-  // }
+  if (showPlanetId > -1) {
+    const planet = bodies.find((b) => b.id === showPlanetId);
+    if (planet) {
+      const pos = new Vector3();
+      planet.sphere.getWorldPosition(pos);
+
+      camera.position.set(pos.x + planet.radius * 2, pos.y + planet.radius * 2, pos.z + planet.radius * 8);
+      camera.lookAt(pos.x, pos.y, pos.z);
+    }
+  }
 
   renderer.render(scene, camera);
 };
 
 const createSolarSystem = async () => {
+  const handleShowPlanet = (id: number) => {
+    showPlanetId = id;
+  };
+
   for (const sun of solarSystem.suns) {
-    const sunEntity = new Sun(sun.id, sun.radius, {
+    const sunEntity = new Sun(sun.id, EntityType.Sun, sun.radius, {
       baseSeed: sun.seed,
       position: sun.position ? new Vector3(...sun.position) : new Vector3(0, 0, 0),
       colour: new Color(0xffca20),
@@ -133,9 +168,11 @@ const createSolarSystem = async () => {
     bodies.push(sunEntity);
     scene.add(sunEntity.entity);
 
-    for (const planet of solarSystem.planets) {
+    for (let planetIndex = 0; planetIndex < solarSystem.planets.length; planetIndex++) {
+      const planet = solarSystem.planets[planetIndex];
+
       const orbitEntity = bodies.find((b) => b.id === planet.orbitEntityId) as Entity;
-      const planetEntity = new ClassM(planet.id, planet.radius, {
+      const planetParams: EntityParams = {
         baseSeed: planet.seed,
         position: planet.position ? new Vector3(...planet.position) : orbitEntity.entity.position,
         terrainHeight: planet.terrainHeight,
@@ -144,12 +181,18 @@ const createSolarSystem = async () => {
         orbitDirection: planet.orbitDirection,
         orbitSpeed: planet.orbitSpeed,
         spinSpeed: planet.spinSpeed,
-      });
+        onShow: handleShowPlanet,
+      };
+
+      const planetEntity =
+        planetIndex === 2
+          ? new Earth(planet.id, EntityType.Planet, planet.radius, planetParams)
+          : new ClassM(planet.id, EntityType.Planet, planet.radius, planetParams);
       await planetEntity.create();
 
       for (const moon of planet.moons) {
         const orbitEntity = planetEntity;
-        const moonEntity = new Moon(moon.id, moon.radius, {
+        const moonEntity = new Moon(moon.id, EntityType.Moon, moon.radius, {
           baseSeed: moon.seed,
           position: moon.position ? new Vector3(...moon.position) : orbitEntity.entity.position,
           colour: moon.rgb ? new Color(...moon.rgb) : new Color(1, 1, 1),

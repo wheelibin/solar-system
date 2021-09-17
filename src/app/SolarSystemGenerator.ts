@@ -68,19 +68,13 @@ export class SolarSystemGenerator {
     for (let sunIndex = 0; sunIndex < suns.length; sunIndex++) {
       const sun = suns[sunIndex];
 
-      const limits = {
-        maxMoons: 5,
-        planetOrbitIncrementRange: [sun.radius * 3, sun.radius * 6],
-        moonOrbitIncrementRange: [],
-      };
-
       const numberOfPlanets = Random.getRandomInt(1, 9, [seed, sunIndex, seedIndexes.numberOfPlanets]);
 
       for (let planetIndex = 0; planetIndex < numberOfPlanets; planetIndex++) {
         const baseSeed = [seed, sunIndex, planetIndex];
 
         const planetRadius = Random.getRandomInt(sun.radius * 0.1, sun.radius * 0.3, [...baseSeed, seedIndexes.radius]);
-        const numberOfMoons = Random.getRandomInt(1, limits.maxMoons, [...baseSeed, seedIndexes.numberOfPlanets]);
+        const numberOfMoons = Random.getRandomInt(1, 5, [...baseSeed, seedIndexes.numberOfPlanets]);
 
         // create the moons for the planet
         const planetMoons = [];
@@ -127,6 +121,7 @@ export class SolarSystemGenerator {
           [...baseSeed, seedIndexes.orbitRadius, 0]
         );
 
+        // ensure orbits of planets/moons don't overlap
         const prevPlanet =
           solarSystem.planets.length > 0 ? solarSystem.planets[solarSystem.planets.length - 1] : undefined;
         const prevPlanetOrbitRadius = planetIndex === 0 ? orbitRadiusInc : prevPlanet!.orbitRadius;
@@ -135,6 +130,7 @@ export class SolarSystemGenerator {
         const currentPlanetMoonRadius = planetMoons[planetMoons.length - 1].orbitRadius;
         const orbitPadding = planetRadius;
 
+        // create the planet
         const planet: SolarSystemEntity = {
           id: this.getNextId(),
           name: `Planet ${planetIndex}`,
