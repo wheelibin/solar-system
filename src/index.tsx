@@ -1,6 +1,9 @@
 import "./index.css";
 
-import * as app from "./app/app";
+import { App } from "./app/App";
 
-app.init();
-app.animate();
+const app = new App();
+
+app.init().then(() => {
+  app.animate();
+});

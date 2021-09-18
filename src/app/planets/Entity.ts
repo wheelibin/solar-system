@@ -15,6 +15,7 @@ import {
   Vector3,
   BufferGeometry,
   BufferAttribute,
+  Texture,
 } from "three";
 
 import { NoiseMapGenerator } from "../NoiseMapGenerator";
@@ -56,10 +57,16 @@ export abstract class Entity {
   public sphere!: Mesh;
   public orbit!: Material;
 
-  private loader = new TextureLoader();
-
   protected textureWidth: number;
   protected textureHeight: number;
+
+  private loader = new TextureLoader();
+  private sphereGeometry!: SphereBufferGeometry;
+  private orbitGeometry!: BufferGeometry;
+  private material!: Material;
+  private heightMapTexture!: CanvasTexture;
+  private colourMapTexture!: CanvasTexture;
+  private texture!: Texture;
 
   constructor(id: number, entityType: EntityType, radius: number, params: EntityParams) {
     this.id = id;
@@ -74,36 +81,35 @@ export abstract class Entity {
   }
 
   public async create() {
-    let material: Material;
     if (this.params.terrainHeight > 0) {
       const terrainMaps = this.generateTerrainMaps();
 
-      const heightMapTexture = new CanvasTexture(terrainMaps.heightMap.canvas);
-      const colourMapTexture = new CanvasTexture(terrainMaps.map.canvas);
+      this.heightMapTexture = new CanvasTexture(terrainMaps.heightMap.canvas);
+      this.colourMapTexture = new CanvasTexture(terrainMaps.map.canvas);
 
-      heightMapTexture.mapping = EquirectangularReflectionMapping;
-      colourMapTexture.mapping = EquirectangularReflectionMapping;
+      this.heightMapTexture.mapping = EquirectangularReflectionMapping;
+      this.colourMapTexture.mapping = EquirectangularReflectionMapping;
 
-      material = new MeshPhongMaterial({
-        bumpMap: heightMapTexture,
+      this.material = new MeshPhongMaterial({
+        bumpMap: this.heightMapTexture,
         bumpScale: this.params.terrainHeight,
-        map: colourMapTexture,
-        displacementMap: heightMapTexture,
+        map: this.colourMapTexture,
+        displacementMap: this.heightMapTexture,
         displacementScale: this.params.terrainHeight,
       });
     } else {
       if (this.params.texturePath) {
-        const texture = await this.loader.loadAsync(this.params.texturePath);
-        material = new MeshBasicMaterial({ map: texture, color: this.params.colour });
+        this.texture = await this.loader.loadAsync(this.params.texturePath);
+        this.material = new MeshBasicMaterial({ map: this.texture, color: this.params.colour });
       } else {
-        material = new MeshBasicMaterial({
+        this.material = new MeshBasicMaterial({
           color: this.params.colour,
         });
       }
     }
 
-    const geometry = new SphereBufferGeometry(this.radius, 64, 48);
-    this.sphere = new Mesh(geometry, material);
+    this.sphereGeometry = new SphereBufferGeometry(this.radius, 64, 48);
+    this.sphere = new Mesh(this.sphereGeometry, this.material);
 
     this.sphere.castShadow = !!this.params.castShadow;
     this.sphere.receiveShadow = !!this.params.receiveShadow;
@@ -149,6 +155,25 @@ export abstract class Entity {
     if (this.params.onShow) {
       this.params.onShow(this.id);
     }
+  }
+
+  protected abstract _dispose(): void;
+  public dispose() {
+    // geometries
+    this.sphereGeometry?.dispose();
+    this.orbitGeometry?.dispose();
+
+    // materials
+    this.orbit?.dispose();
+    this.material?.dispose();
+
+    // textures
+    this.heightMapTexture?.dispose();
+    this.colourMapTexture?.dispose();
+    this.texture?.dispose();
+
+    // call implemented dispose method
+    this._dispose();
   }
 
   protected generateTerrainMaps(): TerrainMaps {
@@ -223,7 +248,7 @@ export abstract class Entity {
 
   private createOrbitCircle(radius: number) {
     var segmentCount = 128;
-    const geometry = new BufferGeometry();
+    this.orbitGeometry = new BufferGeometry();
     const verts = [];
     this.orbit = new LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
 
@@ -232,7 +257,7 @@ export abstract class Entity {
       verts.push(Math.cos(theta) * radius, 0, Math.sin(theta) * radius);
     }
     const vertices = new Float32Array(verts);
-    geometry.setAttribute("position", new BufferAttribute(vertices, 3));
-    return new Line(geometry, this.orbit);
+    this.orbitGeometry.setAttribute("position", new BufferAttribute(vertices, 3));
+    return new Line(this.orbitGeometry, this.orbit);
   }
 }

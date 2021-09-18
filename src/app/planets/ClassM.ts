@@ -2,6 +2,7 @@ import { Random } from "../Random";
 import { Entity } from "./Entity";
 
 export class ClassM extends Entity {
+  protected _dispose(): void {}
   private colours = {
     oceanDark: this.getRandomColour(0),
     oceanLight: this.getRandomColour(1),

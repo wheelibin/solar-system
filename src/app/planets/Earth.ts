@@ -18,6 +18,7 @@ const colours = {
 };
 
 export class Earth extends Entity {
+  protected _dispose(): void {}
   protected getMapColour(height: number, y: number) {
     const colour = this.getColourForHeight(height);
 
