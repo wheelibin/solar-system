@@ -11,6 +11,7 @@ type SolarSystemEntity = {
   orbitRadius: number;
   orbitDirection: number;
   orbitSpeed: number;
+  orbitInclanation: number;
   spinSpeed: number;
 
   position?: [number, number, number];
@@ -32,6 +33,7 @@ const seedIndexes = {
   spinSpeed: 6,
   numberOfPlanets: 7,
   orbitRadius: 8,
+  orbitInclanation: 9,
 };
 
 export class SolarSystemGenerator {
@@ -61,6 +63,7 @@ export class SolarSystemGenerator {
         orbitRadius: 0,
         orbitSpeed: 0,
         orbitDirection: 0,
+        orbitInclanation: 0,
         spinSpeed: Random.getRandomFloat(0.0001, 0.0003, [...[seed, 0], seedIndexes.spinSpeed]),
       },
     ];
@@ -93,8 +96,8 @@ export class SolarSystemGenerator {
             id: this.getNextId(),
             name: `Moon ${moonIndex}`,
             seed: baseSeed,
-            radius: Random.getRandomInt(planetRadius / 24, planetRadius / 8, [...baseSeed, seedIndexes.radius]),
-            terrainHeight: Random.getRandomInt(1, 10, [...baseSeed, seedIndexes.terrainHeight]),
+            radius: Random.getRandomInt(planetRadius / 12, planetRadius / 4, [...baseSeed, seedIndexes.radius]),
+            terrainHeight: Random.getRandomInt(1, 5, [...baseSeed, seedIndexes.terrainHeight]),
             orbitEntityId: -1,
             orbitRadius:
               moonIndex === 0
@@ -103,6 +106,7 @@ export class SolarSystemGenerator {
                   Random.getRandomInt(minOrbitRadius * 0.2, minOrbitRadius, [...baseSeed, seedIndexes.orbitRadius, 1]),
             orbitDirection: randomOrbitDirection,
             orbitSpeed: randomOrbitSpeed,
+            orbitInclanation: Random.getRandomInt(0, 45, [...baseSeed, seedIndexes.orbitInclanation]),
             spinSpeed: randomSpinSpeed,
             rgb: getRandomRgb([...baseSeed, seedIndexes.colour]),
             moons: [],
@@ -141,6 +145,7 @@ export class SolarSystemGenerator {
           orbitRadius: prevPlanetOrbitRadius + prevPlanetMoonRadius + currentPlanetMoonRadius + orbitPadding,
           orbitDirection: randomOrbitDirection,
           orbitSpeed: randomOrbitSpeed,
+          orbitInclanation: Random.getRandomInt(0, 15, [...baseSeed, seedIndexes.orbitInclanation]),
           spinSpeed: randomSpinSpeed,
           moons: planetMoons,
         };

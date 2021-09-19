@@ -48,6 +48,7 @@ export class App {
 
   private options = {
     seed: 2,
+    simulationSpeed: 5,
   };
 
   private buttonHandlers = {
@@ -119,6 +120,8 @@ export class App {
 
     this.gui.add(this.buttonHandlers, "newSeed").name("New Seed");
     this.gui.add(this.options, "seed").name("Seed").onFinishChange(this.buttonHandlers.changeSeed);
+
+    this.gui.add(this.options, "simulationSpeed", 1, 10, 0.5).name("Simulation Speed");
   }
 
   public init = async () => {
@@ -236,6 +239,7 @@ export class App {
         orbitRadius: sun.orbitRadius,
         orbitDirection: sun.orbitDirection,
         orbitSpeed: sun.orbitSpeed,
+        orbitInclanation: sun.orbitInclanation,
         spinSpeed: sun.spinSpeed,
       });
       await sunEntity.create();
@@ -254,6 +258,7 @@ export class App {
           orbitRadius: planet.orbitRadius,
           orbitDirection: planet.orbitDirection,
           orbitSpeed: planet.orbitSpeed,
+          orbitInclanation: planet.orbitInclanation,
           spinSpeed: planet.spinSpeed,
           onShow: handleShowPlanet,
         };
@@ -275,6 +280,7 @@ export class App {
             orbitRadius: moon.orbitRadius,
             orbitDirection: moon.orbitDirection,
             orbitSpeed: moon.orbitSpeed,
+            orbitInclanation: moon.orbitInclanation,
             spinSpeed: moon.spinSpeed,
           });
           await moonEntity.create();

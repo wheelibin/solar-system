@@ -16,6 +16,7 @@ import {
   BufferGeometry,
   BufferAttribute,
   Texture,
+  MathUtils,
 } from "three";
 
 import { NoiseMapGenerator } from "../NoiseMapGenerator";
@@ -39,6 +40,7 @@ export type EntityParams = {
   orbitDirection: number;
   orbitSpeed: number;
   orbitRadius: number;
+  orbitInclanation: number;
   spinSpeed: number;
 
   colour?: Color;
@@ -130,6 +132,9 @@ export abstract class Entity {
 
       // position the whole entity at the orbit entity position
       this.entity.position.set(orbitEntityPos.x, orbitEntityPos.y, orbitEntityPos.z);
+
+      // set orbit inclanation/tilt
+      this.entity.rotation.x = MathUtils.degToRad(this.params.orbitInclanation);
     }
 
     this.entity.add(this.sphere);
