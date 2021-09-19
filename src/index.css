@@ -1,21 +1,34 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+    "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-#new-seed-button .property-name {
-  font-size: large;
-  text-align: center;
+.planet-info-box {
+  left: 16px;
+  bottom: 50%;
+  box-sizing: border-box;
+  width: 300px;
+  background: #1a1a1a;
+  color: #eee;
+  font: 11px "Lucida Grande", sans-serif;
+  text-shadow: 0 -1px 0 #111;
+  position: absolute;
+  border: 1px solid #2c2c2c;
+  padding: 8px 16px;
+}
+
+.planet-info-box__name {
+  margin: 0;
+}
+
+.planet-info-box__prop-container {
   display: flex;
-  justify-content: center;
-  width: 100%;
+  justify-content: space-between;
 }
