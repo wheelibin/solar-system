@@ -18,7 +18,7 @@ const colours = {
 };
 
 export class Earth extends Entity {
-  protected maxTerrainHeight = 8;
+  protected maxTerrainHeight = this.radius / 16;
 
   protected _dispose(): void {}
 

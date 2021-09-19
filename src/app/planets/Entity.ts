@@ -40,7 +40,9 @@ export type EntityParams = {
   orbitSpeed: number;
   orbitRadius: number;
   orbitInclanation: number;
+  orbitStartPosition: number;
   spinSpeed: number;
+  spinDirection: number;
 
   terrainHeight?: number;
   colour?: Color;
@@ -52,6 +54,7 @@ export type EntityParams = {
 
 export abstract class Entity {
   public id: number;
+  public name: string;
   public entityType: EntityType;
   public entity: Group;
   public params: EntityParams;
@@ -71,8 +74,9 @@ export abstract class Entity {
   private colourMapTexture!: CanvasTexture;
   private texture!: Texture;
 
-  constructor(id: number, entityType: EntityType, radius: number, params: EntityParams) {
+  constructor(id: number, name: string, entityType: EntityType, radius: number, params: EntityParams) {
     this.id = id;
+    this.name = name;
     this.entityType = entityType;
     this.radius = radius;
     this.params = params;
@@ -138,6 +142,9 @@ export abstract class Entity {
 
       // set orbit inclanation/tilt
       this.entity.rotation.x = MathUtils.degToRad(this.params.orbitInclanation);
+
+      // set initial orbit position
+      this.entity.rotation.y = MathUtils.degToRad(360 * this.params.orbitStartPosition);
     }
 
     this.entity.add(this.sphere);
@@ -155,7 +162,7 @@ export abstract class Entity {
     }
 
     if (this.params.spinSpeed) {
-      this.sphere.rotation.y += this.params.spinSpeed * speed;
+      this.sphere.rotation.y += this.params.spinSpeed * speed * this.params.spinDirection;
     }
   }
 

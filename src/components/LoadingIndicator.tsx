@@ -2,6 +2,10 @@ import React from "react";
 
 import "./LoadingIndicator.css";
 
-export const LoadingIndicator: React.FC = () => {
-  return <div className="loading-indicator">Generating Solar System...</div>;
+type Props = {
+  show?: boolean;
+};
+
+export const LoadingIndicator: React.FC<Props> = ({ show }) => {
+  return show ? <div className="loading-indicator">Generating Solar System...</div> : null;
 };

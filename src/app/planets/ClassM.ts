@@ -2,7 +2,7 @@ import { Random } from "../Random";
 import { Entity } from "./Entity";
 
 export class ClassM extends Entity {
-  protected maxTerrainHeight = 8;
+  protected maxTerrainHeight = this.radius / 16;
 
   protected _dispose(): void {}
 

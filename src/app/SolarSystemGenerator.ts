@@ -12,7 +12,9 @@ export type SolarSystemEntity = {
   orbitDirection: number;
   orbitSpeed: number;
   orbitInclanation: number;
+  orbitStartPosition: number;
   spinSpeed: number;
+  spinDirection: number;
 
   position?: [number, number, number];
   rgb?: [number, number, number];
@@ -34,6 +36,8 @@ const seedIndexes = {
   numberOfPlanets: 7,
   orbitRadius: 8,
   orbitInclanation: 9,
+  spinDirection: 10,
+  orbitStartPosition: 11,
 };
 
 export class SolarSystemGenerator {
@@ -64,50 +68,65 @@ export class SolarSystemGenerator {
         orbitSpeed: 0,
         orbitDirection: 0,
         orbitInclanation: 0,
+        orbitStartPosition: 0,
         spinSpeed: Random.getRandomFloat(0.0001, 0.0003, [...[seed, 0], seedIndexes.spinSpeed]),
+        spinDirection: Random.coinToss([...[seed, 0], seedIndexes.spinDirection]) ? 1 : -1,
       },
     ];
 
     for (let sunIndex = 0; sunIndex < suns.length; sunIndex++) {
       const sun = suns[sunIndex];
 
+      // const neptuneOrbitRadius = oneAU * 30;
       const numberOfPlanets = Random.getRandomInt(1, 9, [seed, sunIndex, seedIndexes.numberOfPlanets]);
 
       for (let planetIndex = 0; planetIndex < numberOfPlanets; planetIndex++) {
         const baseSeed = [seed, sunIndex, planetIndex];
 
-        const planetRadius = Random.getRandomInt(sun.radius * 0.1, sun.radius * 0.3, [...baseSeed, seedIndexes.radius]);
-        const numberOfMoons = Random.getRandomInt(1, 5, [...baseSeed, seedIndexes.numberOfPlanets]);
+        // let's base our planet sizes off something from reality
+        // choose a size somewhere between mercury and double jupiter
+        const jupiterRadius = sun.radius / 10;
+        const mercuryRadius = sun.radius / 327;
+
+        const planetRadius = Random.getRandomInt(mercuryRadius, jupiterRadius * 2, [...baseSeed, seedIndexes.radius]);
+        const numberOfMoons = Random.getRandomInt(1, 10, [...baseSeed, seedIndexes.numberOfPlanets]);
 
         // create the moons for the planet
         const planetMoons = [];
         for (let moonIndex = 0; moonIndex < numberOfMoons; moonIndex++) {
           const baseSeed = [seed, sunIndex, planetIndex, moonIndex];
           const randomOrbitDirection = Random.coinToss([...baseSeed, seedIndexes.orbitDirection]) ? 1 : -1;
-          const randomOrbitSpeed = Random.getRandomFloat(0.001, 0.005, [...baseSeed, seedIndexes.orbitSpeed]);
+
           const randomSpinSpeed = Random.getRandomFloat(0.001, 0.005, [...baseSeed, seedIndexes.spinSpeed]);
           const minOrbitRadius = Random.getRandomInt(planetRadius * 3 * 0.5, planetRadius * 4, [
             ...baseSeed,
             seedIndexes.orbitRadius,
             0,
           ]);
+          const orbitRadius =
+            moonIndex === 0
+              ? minOrbitRadius
+              : planetMoons[moonIndex - 1].orbitRadius +
+                Random.getRandomInt(minOrbitRadius * 0.2, minOrbitRadius, [...baseSeed, seedIndexes.orbitRadius, 1]);
+          const moonRadius = Random.getRandomInt(planetRadius / 12, planetRadius / 4, [
+            ...baseSeed,
+            seedIndexes.radius,
+          ]);
 
           const moon: SolarSystemEntity = {
             id: this.getNextId(),
-            name: `Moon ${moonIndex}`,
+            name: `Moon ${moonIndex + 1}`,
             seed: baseSeed,
-            radius: Random.getRandomInt(planetRadius / 12, planetRadius / 4, [...baseSeed, seedIndexes.radius]),
+            radius: moonRadius,
             terrainHeight: Random.getRandom([...baseSeed, seedIndexes.terrainHeight]), // Random.getRandomInt(1, 5, [...baseSeed, seedIndexes.terrainHeight]),
             orbitEntityId: -1,
-            orbitRadius:
-              moonIndex === 0
-                ? minOrbitRadius
-                : planetMoons[moonIndex - 1].orbitRadius +
-                  Random.getRandomInt(minOrbitRadius * 0.2, minOrbitRadius, [...baseSeed, seedIndexes.orbitRadius, 1]),
+            orbitRadius: orbitRadius,
             orbitDirection: randomOrbitDirection,
-            orbitSpeed: randomOrbitSpeed,
+            orbitSpeed: (numberOfMoons - moonIndex) / numberOfMoons,
             orbitInclanation: Random.getRandomInt(0, 45, [...baseSeed, seedIndexes.orbitInclanation]),
+            orbitStartPosition: Random.getRandom([...baseSeed, seedIndexes.orbitStartPosition]),
             spinSpeed: randomSpinSpeed,
+            spinDirection: Random.coinToss([...baseSeed, seedIndexes.spinDirection]) ? 1 : -1,
             rgb: getRandomRgb([...baseSeed, seedIndexes.colour]),
             moons: [],
           };
@@ -117,36 +136,36 @@ export class SolarSystemGenerator {
 
         // now create the planet - ensuring the orbit is large enough to accomodate all the moons
         const randomOrbitDirection = Random.coinToss([...baseSeed, seedIndexes.orbitDirection]) ? 1 : -1;
-        const randomOrbitSpeed = Random.getRandomFloat(0.001, 0.005, [...baseSeed, seedIndexes.orbitSpeed]);
         const randomSpinSpeed = Random.getRandomFloat(0.002, 0.006, [...baseSeed, seedIndexes.spinSpeed]);
-        const orbitRadiusInc = Random.getRandomInt(
-          planetMoons[planetMoons.length - 1].orbitRadius * 1.1,
-          planetMoons[planetMoons.length - 1].orbitRadius * 2,
-          [...baseSeed, seedIndexes.orbitRadius, 0]
-        );
 
         // ensure orbits of planets/moons don't overlap
         const prevPlanet =
           solarSystem.planets.length > 0 ? solarSystem.planets[solarSystem.planets.length - 1] : undefined;
-        const prevPlanetOrbitRadius = planetIndex === 0 ? orbitRadiusInc : prevPlanet!.orbitRadius;
+        const currentPlanetMoonRadius = planetMoons[planetMoons.length - 1].orbitRadius;
+        const firstPlanetOrbitRadius = Random.getRandomInt(currentPlanetMoonRadius * 1.5, currentPlanetMoonRadius * 3, [
+          ...baseSeed,
+          seedIndexes.orbitRadius,
+          0,
+        ]);
+        const prevPlanetOrbitRadius = planetIndex === 0 ? firstPlanetOrbitRadius : prevPlanet!.orbitRadius;
         const prevPlanetMoonRadius =
           planetIndex === 0 ? 0 : prevPlanet!.moons[prevPlanet!.moons.length - 1].orbitRadius;
-        const currentPlanetMoonRadius = planetMoons[planetMoons.length - 1].orbitRadius;
         const orbitPadding = planetRadius;
-
         // create the planet
         const planet: SolarSystemEntity = {
           id: this.getNextId(),
-          name: `Planet ${planetIndex}`,
+          name: `Planet ${planetIndex + 1}`,
           seed: baseSeed,
           radius: planetRadius,
           terrainHeight: 1,
           orbitEntityId: sun.id,
           orbitRadius: prevPlanetOrbitRadius + prevPlanetMoonRadius + currentPlanetMoonRadius + orbitPadding,
           orbitDirection: randomOrbitDirection,
-          orbitSpeed: randomOrbitSpeed,
+          orbitSpeed: (numberOfPlanets - planetIndex) / numberOfPlanets,
           orbitInclanation: Random.getRandomInt(0, 15, [...baseSeed, seedIndexes.orbitInclanation]),
+          orbitStartPosition: Random.getRandom([...baseSeed, seedIndexes.orbitStartPosition]),
           spinSpeed: randomSpinSpeed,
+          spinDirection: Random.coinToss([...baseSeed, seedIndexes.spinDirection]) ? 1 : -1,
           moons: planetMoons,
         };
 

@@ -3,8 +3,8 @@ import { Entity, EntityParams, EntityType } from "./Entity";
 export class Sun extends Entity {
   protected maxTerrainHeight = 0;
 
-  constructor(id: number, entityType: EntityType, radius: number, params: EntityParams) {
-    super(id, entityType, radius, params);
+  constructor(id: number, name: string, entityType: EntityType, radius: number, params: EntityParams) {
+    super(id, name, entityType, radius, params);
 
     this.params.terrainHeight = 0;
     this.params.texturePath = "assets/sun.jpg";
