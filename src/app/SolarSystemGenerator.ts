@@ -97,7 +97,7 @@ export class SolarSystemGenerator {
             name: `Moon ${moonIndex}`,
             seed: baseSeed,
             radius: Random.getRandomInt(planetRadius / 12, planetRadius / 4, [...baseSeed, seedIndexes.radius]),
-            terrainHeight: Random.getRandomInt(1, 5, [...baseSeed, seedIndexes.terrainHeight]),
+            terrainHeight: Random.getRandom([...baseSeed, seedIndexes.terrainHeight]), // Random.getRandomInt(1, 5, [...baseSeed, seedIndexes.terrainHeight]),
             orbitEntityId: -1,
             orbitRadius:
               moonIndex === 0
@@ -140,7 +140,7 @@ export class SolarSystemGenerator {
           name: `Planet ${planetIndex}`,
           seed: baseSeed,
           radius: planetRadius,
-          terrainHeight: 8,
+          terrainHeight: 1,
           orbitEntityId: sun.id,
           orbitRadius: prevPlanetOrbitRadius + prevPlanetMoonRadius + currentPlanetMoonRadius + orbitPadding,
           orbitDirection: randomOrbitDirection,

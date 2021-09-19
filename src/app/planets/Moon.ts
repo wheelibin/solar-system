@@ -1,7 +1,10 @@
 import { Entity } from "./Entity";
 
 export class Moon extends Entity {
+  protected maxTerrainHeight = 5;
+
   protected _dispose(): void {}
+
   protected getMapColour(height: number, y: number): number[] {
     const ratio = height / 64;
 

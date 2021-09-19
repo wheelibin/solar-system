@@ -35,7 +35,6 @@ type TerrainMaps = {
 export type EntityParams = {
   baseSeed: number[];
   position: Vector3;
-  terrainHeight: number;
   orbitEntity: Entity | false;
   orbitDirection: number;
   orbitSpeed: number;
@@ -43,6 +42,7 @@ export type EntityParams = {
   orbitInclanation: number;
   spinSpeed: number;
 
+  terrainHeight?: number;
   colour?: Color;
   castShadow?: boolean;
   receiveShadow?: boolean;
@@ -61,6 +61,7 @@ export abstract class Entity {
 
   protected textureWidth: number;
   protected textureHeight: number;
+  protected abstract maxTerrainHeight: number;
 
   private loader = new TextureLoader();
   private sphereGeometry!: SphereBufferGeometry;
@@ -83,7 +84,7 @@ export abstract class Entity {
   }
 
   public async create() {
-    if (this.params.terrainHeight > 0) {
+    if (this.params.terrainHeight && this.params.terrainHeight > 0) {
       const terrainMaps = this.generateTerrainMaps();
 
       this.heightMapTexture = new CanvasTexture(terrainMaps.heightMap.canvas);
@@ -92,12 +93,14 @@ export abstract class Entity {
       this.heightMapTexture.mapping = EquirectangularReflectionMapping;
       this.colourMapTexture.mapping = EquirectangularReflectionMapping;
 
+      const terrainHeight = Math.ceil(this.params.terrainHeight * this.maxTerrainHeight);
+
       this.material = new MeshPhongMaterial({
         bumpMap: this.heightMapTexture,
-        bumpScale: this.params.terrainHeight,
+        bumpScale: terrainHeight,
         map: this.colourMapTexture,
         displacementMap: this.heightMapTexture,
-        displacementScale: this.params.terrainHeight,
+        displacementScale: terrainHeight,
       });
     } else {
       if (this.params.texturePath) {

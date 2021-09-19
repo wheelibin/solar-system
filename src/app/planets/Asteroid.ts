@@ -1,7 +1,10 @@
 import { Entity } from "./Entity";
 
 export class Asteroid extends Entity {
+  protected maxTerrainHeight = 10;
+
   protected _dispose(): void {}
+
   protected getMapColour(height: number, y: number): number[] {
     const ratio = height / 255;
 

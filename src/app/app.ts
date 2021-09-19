@@ -233,8 +233,6 @@ export class App {
         baseSeed: sun.seed,
         position: sun.position ? new Vector3(...sun.position) : new Vector3(0, 0, 0),
         colour: new Color(0xffca20),
-        terrainHeight: 0,
-        texturePath: "assets/sun.jpg",
         orbitEntity: false,
         orbitRadius: sun.orbitRadius,
         orbitDirection: sun.orbitDirection,
