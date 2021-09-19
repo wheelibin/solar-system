@@ -42,6 +42,8 @@ export class App {
   private spaceTexture!: Texture;
   private gui!: GUI;
   private guiViewActionsFolder!: GUI;
+  // private planetInfoBox: HTMLElement;
+  private loadingIndicator: HTMLElement;
 
   private ambientLight!: AmbientLight;
   private pointLight!: PointLight;
@@ -63,7 +65,7 @@ export class App {
       }
     },
     newSeed: () => {
-      this.options.seed = MathUtils.randInt(10000, 100000);
+      this.options.seed = MathUtils.randInt(100000, 999999);
       this.reset();
     },
     changeSeed: () => {
@@ -120,6 +122,19 @@ export class App {
     this.gui.add(this.buttonHandlers, "newSeed").name("New Seed");
     this.gui.add(this.options, "seed").name("Seed").onFinishChange(this.buttonHandlers.changeSeed);
     this.gui.add(this.options, "simulationSpeed", 0, 100, 1).name("Simulation Speed");
+
+    // this.planetInfoBox = document.createElement("div");
+    // this.planetInfoBox.className = "planet-info-box";
+    // this.planetInfoBox.innerHTML = `
+    // <h1 class='planet-info-box__name'></h1>
+    // <div class='planet-info-box__prop-container'>
+
+    // </div>
+    // `;
+    // document.body.appendChild(this.planetInfoBox);
+
+    this.loadingIndicator = document.getElementsByClassName("loading-indicator")[0] as HTMLElement;
+    this.loadingIndicator.style.display = "none";
   }
 
   public init = async () => {
@@ -198,6 +213,8 @@ export class App {
   };
 
   private reset = () => {
+    this.toggleLoadingIndicator();
+
     this.gui.updateDisplay();
     this.clearScene();
     this.solarSystem = new SolarSystemGenerator().generate(this.options.seed);
@@ -206,6 +223,7 @@ export class App {
 
     this.init().then(() => {
       this.animate();
+      this.toggleLoadingIndicator();
     });
   };
 
@@ -215,11 +233,27 @@ export class App {
     this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
   };
 
-  createSolarSystem = async () => {
-    const handleShowPlanet = (id: number) => {
-      this.showPlanetId = id;
-    };
+  private handleShowPlanet = (id: number) => {
+    this.showPlanetId = id;
+    // const ssPlanet = this.solarSystem.planets.find((p) => p.id === id) as SolarSystemEntity;
 
+    // document.body.getElementsByClassName("planet-info-box__name")[0].textContent = ssPlanet.name;
+
+    // let html = "";
+    // [["Radius", ssPlanet.radius]].forEach((prop: any) => {
+    //   html += `<p class='planet-info-box__prop-name'>${prop[0]}</p>`;
+    //   html += `<p class='planet-info-box__prop-value'>${prop[1]}</p>`;
+    // });
+
+    // document.body.getElementsByClassName("planet-info-box__prop-container")[0].innerHTML = html;
+  };
+
+  private toggleLoadingIndicator = () => {
+    const display = this.loadingIndicator.style.display;
+    this.loadingIndicator.style.display = display === "none" ? "flex" : "none";
+  };
+
+  createSolarSystem = async () => {
     for (const sun of this.solarSystem.suns) {
       const sunEntity = new Sun(sun.id, EntityType.Sun, sun.radius, {
         baseSeed: sun.seed,
@@ -250,7 +284,7 @@ export class App {
           orbitSpeed: planet.orbitSpeed,
           orbitInclanation: planet.orbitInclanation,
           spinSpeed: planet.spinSpeed,
-          onShow: handleShowPlanet,
+          onShow: this.handleShowPlanet,
         };
 
         const planetEntity =
