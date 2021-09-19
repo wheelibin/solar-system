@@ -3,7 +3,7 @@ import { Entity } from "./Entity";
 export class Moon extends Entity {
   protected _dispose(): void {}
   protected getMapColour(height: number, y: number): number[] {
-    const ratio = height / 255;
+    const ratio = height / 64;
 
     const { r, g, b } = this.params.colour!;
 
