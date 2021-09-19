@@ -1,6 +1,6 @@
 import { Random } from "./Random";
 
-type SolarSystemEntity = {
+export type SolarSystemEntity = {
   id: number;
   name: string;
   seed: number[];
