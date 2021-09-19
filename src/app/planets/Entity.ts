@@ -145,17 +145,17 @@ export abstract class Entity {
     return this;
   }
 
-  public animate(clock: Clock) {
+  public animate(clock: Clock, speed: number) {
     clock.getElapsedTime();
 
     if (this.params.orbitEntity) {
-      const orbitSpeed = this.params.orbitSpeed;
+      const orbitSpeed = this.params.orbitSpeed * speed;
       const orbitDirection = this.params.orbitDirection;
       this.entity.rotation.y += orbitSpeed * orbitDirection;
     }
 
     if (this.params.spinSpeed) {
-      this.sphere.rotation.y += this.params.spinSpeed;
+      this.sphere.rotation.y += this.params.spinSpeed * speed;
     }
   }
 

@@ -53,9 +53,7 @@ export class App {
 
   private buttonHandlers = {
     resetView: () => {
-      this.showPlanetId = -1;
-      this.camera.position.set(...this.cameraInitialPosition);
-      this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
+      this.resetView();
     },
     toggleOrbits: () => {
       for (const body of this.bodies) {
@@ -117,11 +115,11 @@ export class App {
 
     // UI
     this.gui = new GUI();
+    this.gui.width = 300;
 
     this.gui.add(this.buttonHandlers, "newSeed").name("New Seed");
     this.gui.add(this.options, "seed").name("Seed").onFinishChange(this.buttonHandlers.changeSeed);
-
-    this.gui.add(this.options, "simulationSpeed", 1, 10, 0.5).name("Simulation Speed");
+    this.gui.add(this.options, "simulationSpeed", 0, 100, 1).name("Simulation Speed");
   }
 
   public init = async () => {
@@ -159,7 +157,7 @@ export class App {
     requestAnimationFrame(this.animate);
 
     this.bodies.forEach((body) => {
-      body.animate(this.clock);
+      body.animate(this.clock, (this.options.simulationSpeed * 10) / 100);
     });
 
     this.orbitControls.update();
@@ -183,12 +181,10 @@ export class App {
     this.isRunning = false;
 
     try {
-      // this.gui.destroy();
       this.gui.removeFolder(this.guiViewActionsFolder);
       this.guiViewActionsFolder.destroy();
     } catch (error) {}
 
-    // this.spaceTexture.dispose();
     this.ambientLight.dispose();
     this.pointLight.dispose();
 
@@ -199,18 +195,6 @@ export class App {
     this.scene.clear();
 
     this.renderer.render(this.scene, this.camera);
-
-    // this.camera.remove();
-    // this.renderer.dispose();
-    // this.orbitControls.dispose();
-
-    // const canvasElements = document.getElementsByTagName("canvas");
-    // for (let i = 0; i < canvasElements.length; i++) {
-    //   const canvas = canvasElements[i];
-    //   canvas.remove();
-    // }
-
-    // this.init();
   };
 
   private reset = () => {
@@ -218,9 +202,17 @@ export class App {
     this.clearScene();
     this.solarSystem = new SolarSystemGenerator().generate(this.options.seed);
 
+    this.resetView();
+
     this.init().then(() => {
       this.animate();
     });
+  };
+
+  private resetView = () => {
+    this.showPlanetId = -1;
+    this.camera.position.set(...this.cameraInitialPosition);
+    this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
   };
 
   createSolarSystem = async () => {
