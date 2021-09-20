@@ -18,7 +18,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "three/examples/jsm/libs/dat.gui.module";
 
-import { SolarSystem, SolarSystemGenerator } from "./SolarSystemGenerator";
+import { SolarSystem, SolarSystemGenerator } from "./utils/SolarSystemGenerator";
 import { Moon } from "./entities/Moon";
 import { ClassM } from "./entities/ClassM";
 import { Star } from "./entities/Star";
@@ -42,6 +42,7 @@ export class SolarSystemApp {
   private spaceTexture!: Texture;
   private gui!: GUI;
   private guiViewActionsFolder!: GUI;
+  private guiPlanetsFolder!: GUI;
   // private planetInfoBox: HTMLElement;
 
   private ambientLight!: AmbientLight;
@@ -179,8 +180,10 @@ export class SolarSystemApp {
       .name("Centre of View");
     this.guiViewActionsFolder.add(this.buttonHandlers, "resetView").name("Reset View");
 
-    for (const planet of planets) {
-      this.guiViewActionsFolder.add(planet, "show").name(planet.name || "A Planet");
+    this.guiPlanetsFolder = this.gui.addFolder("Planets");
+    for (let index = 0; index < planets.length; index++) {
+      const planet = planets[index];
+      this.guiPlanetsFolder.add(planet, "show").name(`#${index + 1}: ${planet.name}`);
     }
 
     this.isRunning = true;
@@ -224,6 +227,7 @@ export class SolarSystemApp {
 
     try {
       this.gui.removeFolder(this.guiViewActionsFolder);
+      this.gui.removeFolder(this.guiPlanetsFolder);
       this.guiViewActionsFolder.destroy();
     } catch (error) {}
 

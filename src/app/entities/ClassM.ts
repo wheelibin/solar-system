@@ -1,4 +1,4 @@
-import { Random } from "../Random";
+import { Random } from "../utils/Random";
 import { Entity } from "./Entity";
 
 export class ClassM extends Entity {

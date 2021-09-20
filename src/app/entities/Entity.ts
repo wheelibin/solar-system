@@ -19,7 +19,7 @@ import {
   MathUtils,
 } from "three";
 
-import { NoiseMapGenerator } from "../NoiseMapGenerator";
+import { NoiseMapGenerator } from "../utils/NoiseMapGenerator";
 
 export enum EntityType {
   Star,

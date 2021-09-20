@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { LoadingIndicator } from "./LoadingIndicator";
-import { SolarSystemApp } from "../app/SolarSystemApp";
+import { LoadingIndicator } from "../LoadingIndicator/LoadingIndicator";
+import { SolarSystemApp } from "../../app/SolarSystemApp";
 
 type Props = {
   solarSystemApp: SolarSystemApp;

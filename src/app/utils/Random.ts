@@ -23,6 +23,11 @@ export class Random {
     return Random.getRandom(seed) <= 0.5;
   }
 
+  public static getRandomFromArray(array: any[], seed: number[]) {
+    const index = this.getRandomInt(0, array.length - 1, seed);
+    return array[index];
+  }
+
   /**
    * Gets a random point of a sphere, evenly distributed over the sphere.
    * The sphere is centered at (x0,y0,z0) with the passed in radius.

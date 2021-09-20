@@ -1,3 +1,4 @@
+import { planetNames } from "./planetNames";
 import { Random } from "./Random";
 
 export type SolarSystemEntity = {
@@ -38,6 +39,7 @@ const seedIndexes = {
   orbitInclanation: 9,
   spinDirection: 10,
   orbitStartPosition: 11,
+  planetName: 12,
 };
 
 export class SolarSystemGenerator {
@@ -118,7 +120,7 @@ export class SolarSystemGenerator {
             name: `Moon ${moonIndex + 1}`,
             seed: baseSeed,
             radius: moonRadius,
-            terrainHeight: Random.getRandom([...baseSeed, seedIndexes.terrainHeight]), // Random.getRandomInt(1, 5, [...baseSeed, seedIndexes.terrainHeight]),
+            terrainHeight: Random.getRandom([...baseSeed, seedIndexes.terrainHeight]),
             orbitEntityId: -1,
             orbitRadius: orbitRadius,
             orbitDirection: randomOrbitDirection,
@@ -151,10 +153,12 @@ export class SolarSystemGenerator {
         const prevPlanetMoonRadius =
           planetIndex === 0 ? 0 : prevPlanet!.moons[prevPlanet!.moons.length - 1].orbitRadius;
         const orbitPadding = planetRadius;
+        const planetName = Random.getRandomFromArray(planetNames, [...baseSeed, seedIndexes.planetName]);
+
         // create the planet
         const planet: SolarSystemEntity = {
           id: this.getNextId(),
-          name: `Planet ${planetIndex + 1}`,
+          name: planetName,
           seed: baseSeed,
           radius: planetRadius,
           terrainHeight: 1,
