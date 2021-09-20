@@ -1,0 +1,25 @@
+.planet-datasheet {
+  left: 16px;
+  bottom: 50%;
+  box-sizing: border-box;
+  width: 300px;
+  background: #1a1a1a;
+  color: #eee;
+  font: 13px "Lucida Grande", sans-serif;
+  text-shadow: 0 -1px 0 #111;
+  position: absolute;
+  border: 1px solid #2c2c2c;
+  padding: 8px 16px;
+  opacity: 0.7;
+  border-radius: 4px;
+}
+
+.planet-datasheet__property-list {
+  padding-left: 0;
+}
+
+.planet-datasheet__property {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

@@ -79,7 +79,9 @@ export class SolarSystemGenerator {
     for (let starIndex = 0; starIndex < stars.length; starIndex++) {
       const star = stars[starIndex];
 
+      // const oneAU = star.radius * 215;
       // const neptuneOrbitRadius = oneAU * 30;
+
       const numberOfPlanets = Random.getRandomInt(1, 9, [seed, starIndex, seedIndexes.numberOfPlanets]);
 
       for (let planetIndex = 0; planetIndex < numberOfPlanets; planetIndex++) {

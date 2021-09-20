@@ -18,7 +18,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "three/examples/jsm/libs/dat.gui.module";
 
-import { SolarSystem, SolarSystemGenerator } from "./utils/SolarSystemGenerator";
+import { SolarSystem, SolarSystemEntity, SolarSystemGenerator } from "./utils/SolarSystemGenerator";
 import { Moon } from "./entities/Moon";
 import { ClassM } from "./entities/ClassM";
 import { Star } from "./entities/Star";
@@ -51,6 +51,7 @@ export class SolarSystemApp {
   // events
   public onInitialising!: () => void;
   public onInitialised!: () => void;
+  public onSelectPlanet!: (planet?: SolarSystemEntity) => void;
 
   private options = {
     seed: 2,
@@ -247,21 +248,18 @@ export class SolarSystemApp {
     this.showPlanetId = -1;
     this.camera.position.set(...this.cameraInitialPosition);
     this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
+    if (this.onSelectPlanet) {
+      this.onSelectPlanet(undefined);
+    }
   };
 
   private handleShowPlanet = (id: number) => {
     this.showPlanetId = id;
-    // const ssPlanet = this.solarSystem.planets.find((p) => p.id === id) as SolarSystemEntity;
 
-    // document.body.getElementsByClassName("planet-info-box__name")[0].textContent = ssPlanet.name;
-
-    // let html = "";
-    // [["Radius", ssPlanet.radius]].forEach((prop: any) => {
-    //   html += `<p class='planet-info-box__prop-name'>${prop[0]}</p>`;
-    //   html += `<p class='planet-info-box__prop-value'>${prop[1]}</p>`;
-    // });
-
-    // document.body.getElementsByClassName("planet-info-box__prop-container")[0].innerHTML = html;
+    if (this.onSelectPlanet) {
+      const planet = this.solarSystem.planets.find((p) => p.id === id) as SolarSystemEntity;
+      this.onSelectPlanet(planet);
+    }
   };
 
   private toggleOrbits = () => {
