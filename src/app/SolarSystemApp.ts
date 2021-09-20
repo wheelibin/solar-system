@@ -108,6 +108,7 @@ export class SolarSystemApp {
 
     // Controls
     this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.orbitControls.enableDamping = true;
 
     // Stats
     this.stats = new (Stats as any)();
