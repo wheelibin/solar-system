@@ -13,16 +13,16 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { Entity, EntityParams, EntityType } from "./planets/Entity";
+import { Entity, EntityParams, EntityType } from "./entities/Entity";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "three/examples/jsm/libs/dat.gui.module";
 
 import { SolarSystem, SolarSystemGenerator } from "./SolarSystemGenerator";
-import { Moon } from "./planets/Moon";
-import { ClassM } from "./planets/ClassM";
-import { Sun } from "./planets/Sun";
-import { Earth } from "./planets/Earth";
+import { Moon } from "./entities/Moon";
+import { ClassM } from "./entities/ClassM";
+import { Star } from "./entities/Star";
+import { Earth } from "./entities/Earth";
 
 const sunColour = 0xf7e096;
 
@@ -55,7 +55,7 @@ export class SolarSystemApp {
     seed: 2,
     simulationSpeed: 3,
     showOrbits: true,
-    followPlanetName: "Sun 1",
+    followPlanetName: "Star 1",
   };
 
   private buttonHandlers = {
@@ -91,7 +91,7 @@ export class SolarSystemApp {
     // Camera
     this.camera = new Camera();
     this.camera = new PerspectiveCamera(25, window.innerWidth / window.innerHeight, 50, 1e7);
-    this.cameraInitialPosition = [0, this.solarSystem.suns[0].radius * 6, this.solarSystem.suns[0].radius * 20];
+    this.cameraInitialPosition = [0, this.solarSystem.stars[0].radius * 6, this.solarSystem.stars[0].radius * 20];
     this.camera.position.set(...this.cameraInitialPosition);
 
     this.camera.lookAt(0, 0, 0);
@@ -169,13 +169,13 @@ export class SolarSystemApp {
     await this.createSolarSystem();
 
     const planets = this.bodies.filter((b) => b.entityType === EntityType.Planet);
-    const sun = this.bodies.filter((b) => b.entityType === EntityType.Sun)[0];
+    const star = this.bodies.filter((b) => b.entityType === EntityType.Star)[0];
 
     this.guiViewActionsFolder = this.gui.addFolder("View Actions");
     this.guiViewActionsFolder.open();
     this.guiViewActionsFolder.add(this.options, "showOrbits").name("Show Orbits").onChange(this.toggleOrbits);
     this.guiViewActionsFolder
-      .add(this.options, "followPlanetName", [sun.name, ...planets.map((p) => p.name)])
+      .add(this.options, "followPlanetName", [star.name, ...planets.map((p) => p.name)])
       .name("Centre of View");
     this.guiViewActionsFolder.add(this.buttonHandlers, "resetView").name("Reset View");
 
@@ -272,23 +272,23 @@ export class SolarSystemApp {
     const maxPlanetOrbitSpeed = 0.005; // Random.getRandomFloat(0.001, 0.005, [this.options.seed, seedIndexes.orbitSpeed]);
     const maxMoonOrbitSpeed = 0.005; // Random.getRandomFloat(0.001, 0.005, [this.options.seed, seedIndexes.orbitSpeed]);
 
-    for (const sun of this.solarSystem.suns) {
-      const sunEntity = new Sun(sun.id, sun.name, EntityType.Sun, sun.radius, {
-        baseSeed: sun.seed,
-        position: sun.position ? new Vector3(...sun.position) : new Vector3(0, 0, 0),
+    for (const star of this.solarSystem.stars) {
+      const starEntity = new Star(star.id, star.name, EntityType.Star, star.radius, {
+        baseSeed: star.seed,
+        position: star.position ? new Vector3(...star.position) : new Vector3(0, 0, 0),
         colour: new Color(0xffca20),
         orbitEntity: false,
-        orbitRadius: sun.orbitRadius,
-        orbitDirection: sun.orbitDirection,
-        orbitSpeed: sun.orbitSpeed,
-        orbitInclanation: sun.orbitInclanation,
-        orbitStartPosition: sun.orbitStartPosition,
-        spinSpeed: sun.spinSpeed,
-        spinDirection: sun.spinDirection,
+        orbitRadius: star.orbitRadius,
+        orbitDirection: star.orbitDirection,
+        orbitSpeed: star.orbitSpeed,
+        orbitInclanation: star.orbitInclanation,
+        orbitStartPosition: star.orbitStartPosition,
+        spinSpeed: star.spinSpeed,
+        spinDirection: star.spinDirection,
       });
-      await sunEntity.create();
-      this.bodies.push(sunEntity);
-      this.scene.add(sunEntity.entity);
+      await starEntity.create();
+      this.bodies.push(starEntity);
+      this.scene.add(starEntity.entity);
 
       for (let planetIndex = 0; planetIndex < this.solarSystem.planets.length; planetIndex++) {
         const planet = this.solarSystem.planets[planetIndex];

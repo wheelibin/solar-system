@@ -1,6 +1,6 @@
 import { Entity, EntityParams, EntityType } from "./Entity";
 
-export class Sun extends Entity {
+export class Star extends Entity {
   protected maxTerrainHeight = 0;
 
   constructor(id: number, name: string, entityType: EntityType, radius: number, params: EntityParams) {

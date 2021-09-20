@@ -22,7 +22,7 @@ import {
 import { NoiseMapGenerator } from "../NoiseMapGenerator";
 
 export enum EntityType {
-  Sun,
+  Star,
   Planet,
   Moon,
 }
