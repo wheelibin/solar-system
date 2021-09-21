@@ -1,4 +1,4 @@
-import { SolarSystemEntity } from "../../app/utils/SolarSystemGenerator";
+import { SolarSystemEntity } from "../../app/models/SolarSystem";
 import "./PlanetDataSheet.css";
 
 type Props = {

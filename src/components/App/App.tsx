@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { LoadingIndicator } from "../LoadingIndicator/LoadingIndicator";
 import { SolarSystemApp } from "../../app/SolarSystemApp";
 import { PlanetDataSheet } from "../PlanetDataSheet/PlanetDataSheet";
-import { SolarSystemEntity } from "../../app/utils/SolarSystemGenerator";
+import { SolarSystemEntity } from "../../app/models/SolarSystem";
 
 type Props = {
   solarSystemApp: SolarSystemApp;

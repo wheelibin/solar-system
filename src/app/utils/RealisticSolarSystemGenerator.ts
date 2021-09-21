@@ -18,7 +18,7 @@ const seedIndexes = {
   planetName: 12,
 };
 
-export class SolarSystemGenerator {
+export class RealisticSolarSystemGenerator {
   private EntityId = 0;
 
   private getNextId(): number {

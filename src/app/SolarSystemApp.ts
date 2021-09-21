@@ -18,11 +18,12 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "three/examples/jsm/libs/dat.gui.module";
 
-import { SolarSystem, SolarSystemEntity, SolarSystemGenerator } from "./utils/SolarSystemGenerator";
+import { SolarSystemGenerator } from "./utils/SolarSystemGenerator";
 import { Moon } from "./entities/Moon";
 import { ClassM } from "./entities/ClassM";
 import { Star } from "./entities/Star";
 import { Earth } from "./entities/Earth";
+import { SolarSystem, SolarSystemEntity } from "./models/SolarSystem";
 
 const sunColour = 0xf7e096;
 
