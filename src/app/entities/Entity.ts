@@ -163,7 +163,7 @@ export abstract class Entity {
     return this;
   }
 
-  public animate(clock: Clock, speed: number, camera: Camera) {
+  public animate(clock: Clock, speed: number, camera: Camera, showLabels: boolean) {
     clock.getElapsedTime();
 
     if (this.params.orbitEntity) {
@@ -184,11 +184,14 @@ export abstract class Entity {
     }
 
     if (this.params.hasLabel) {
-      // keep the label the same size regardless of camera zoom
-      const scaleFactor = 24;
-      const scale = this.labelScaleVector.subVectors(this.sphere.position, camera.position).length() / scaleFactor;
-      this.labelSprite.scale.set(scale, scale * this.labelAspectRatio, 1);
-      this.labelSprite.position.y = this.radius;
+      this.labelSprite.visible = showLabels;
+      if (showLabels) {
+        // keep the label the same size regardless of camera zoom
+        const scaleFactor = 24;
+        const scale = this.labelScaleVector.subVectors(this.sphere.position, camera.position).length() / scaleFactor;
+        this.labelSprite.scale.set(scale, scale * this.labelAspectRatio, 1);
+        this.labelSprite.position.y = this.radius;
+      }
     }
   }
 

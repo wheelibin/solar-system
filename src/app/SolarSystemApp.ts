@@ -20,7 +20,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "three/examples/jsm/libs/dat.gui.module";
 
-import { SolarSystemGenerator } from "./utils/RealisticSolarSystemGenerator";
+import { SolarSystemGenerator } from "./utils/SolarSystemGenerator";
 
 import { Moon } from "./entities/Moon";
 import { ClassM } from "./entities/ClassM";
@@ -61,7 +61,9 @@ export class SolarSystemApp {
     simulationSpeed: 3,
     showOrbits: true,
     followPlanetName: "Star 1",
-    realisticScale: false,
+    trueScale: false,
+    showPlanetLabels: false,
+    showStats: true,
   };
 
   private buttonHandlers = {
@@ -139,6 +141,9 @@ export class SolarSystemApp {
     this.clearScene();
     this.solarSystem = new SolarSystemGenerator(this.options.seed).generate();
 
+    // default to showing labels when in true scale (and vice-versa)
+    this.options.showPlanetLabels = this.options.trueScale;
+
     this._init().then(() => {
       this.resetView();
       this.animate();
@@ -162,7 +167,7 @@ export class SolarSystemApp {
     this.pointLight.position.set(0, 0, 0);
     this.scene.add(this.pointLight);
 
-    if (this.options.realisticScale) {
+    if (this.options.trueScale) {
       await this.renderRealisticSolarSystem();
       this.camera.position.set(...this.cameraInitialPosition);
     } else {
@@ -173,15 +178,18 @@ export class SolarSystemApp {
     const planets = this.bodies.filter((b) => b.entityType === EntityType.Planet);
     const star = this.bodies.filter((b) => b.entityType === EntityType.Star)[0];
 
-    this.guiViewActionsFolder = this.gui.addFolder("View Actions");
+    this.guiViewActionsFolder = this.gui.addFolder("View Options");
     this.guiViewActionsFolder.open();
-    this.guiViewActionsFolder.add(this.options, "realisticScale").name("True Scale").onChange(this.init);
-    this.guiViewActionsFolder.add(this.options, "showOrbits").name("Show Orbits").onChange(this.toggleOrbits);
 
     this.guiViewActionsFolder
       .add(this.options, "followPlanetName", [star.name, ...planets.map((p) => p.name)])
       .name("Centre of View");
     this.guiViewActionsFolder.add(this.buttonHandlers, "resetView").name("Reset View");
+
+    this.guiViewActionsFolder.add(this.options, "trueScale").name("True Scale").onChange(this.init);
+    this.guiViewActionsFolder.add(this.options, "showOrbits").name("Orbits").onChange(this.toggleOrbits);
+    this.guiViewActionsFolder.add(this.options, "showPlanetLabels").name("Labels");
+    this.guiViewActionsFolder.add(this.options, "showStats").name("Stats");
 
     this.guiPlanetsFolder = this.gui.addFolder("Planets");
     for (let index = 0; index < planets.length; index++) {
@@ -199,17 +207,27 @@ export class SolarSystemApp {
     requestAnimationFrame(this.animate);
 
     this.bodies.forEach((body) => {
-      body.animate(this.clock, this.options.simulationSpeed / 5, this.camera);
+      body.animate(
+        this.clock,
+        this.options.simulationSpeed / 2,
+        this.camera,
+        this.options.showPlanetLabels && this.showPlanetId === -1
+      );
     });
 
-    this.stats.update();
+    if (this.options.showStats) {
+      this.stats.dom.style.display = "initial";
+      this.stats.update();
+    } else {
+      this.stats.dom.style.display = "none";
+    }
 
     if (this.showPlanetId > -1) {
       const planet = this.bodies.find((b) => b.id === this.showPlanetId);
       if (planet) {
         const pos = new Vector3();
         planet.sphere.getWorldPosition(pos);
-        this.camera.position.set(pos.x + planet.radius * 2, pos.y + planet.radius * 2, pos.z + planet.radius * 8);
+        this.camera.position.set(pos.x + planet.radius * 2, pos.y + planet.radius * 2, pos.z + planet.radius * 10);
         this.camera.lookAt(pos.x, pos.y, pos.z);
       }
     } else {
@@ -249,7 +267,7 @@ export class SolarSystemApp {
   private resetView = () => {
     this.showPlanetId = -1;
 
-    if (this.options.realisticScale) {
+    if (this.options.trueScale) {
       this.camera.position.set(...this.cameraInitialPosition);
     } else {
       this.camera.position.set(...this.cameraInitialPosition).divideScalar(500);
