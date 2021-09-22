@@ -17,6 +17,9 @@ import {
   BufferAttribute,
   Texture,
   MathUtils,
+  SpriteMaterial,
+  Sprite,
+  Camera,
 } from "three";
 
 import { NoiseMapGenerator } from "../utils/NoiseMapGenerator";
@@ -50,6 +53,7 @@ export type EntityParams = {
   receiveShadow?: boolean;
   texturePath?: string;
   onShow?: (id: number) => void;
+  hasLabel?: boolean;
 };
 
 export abstract class Entity {
@@ -73,6 +77,12 @@ export abstract class Entity {
   private heightMapTexture!: CanvasTexture;
   private colourMapTexture!: CanvasTexture;
   private texture!: Texture;
+
+  private labelContext!: CanvasRenderingContext2D;
+  private labelTexture!: Texture;
+  private labelSprite!: Sprite;
+  private labelScaleVector = new Vector3();
+  private labelAspectRatio!: number;
 
   constructor(id: number, name: string, entityType: EntityType, radius: number, params: EntityParams) {
     this.id = id;
@@ -123,8 +133,11 @@ export abstract class Entity {
     this.sphere.castShadow = !!this.params.castShadow;
     this.sphere.receiveShadow = !!this.params.receiveShadow;
 
-    // const geom = new PlaneGeometry(this.textureWidth, this.textureHeight);
-    // this.sphere = new Mesh(geom, material);
+    if (this.params.hasLabel) {
+      this.addLabel();
+    }
+
+    this.entity.add(this.sphere);
 
     if (this.params.orbitEntity) {
       const orbitEntityPos = this.params.orbitEntity.sphere.position;
@@ -147,22 +160,35 @@ export abstract class Entity {
       this.entity.rotation.y = MathUtils.degToRad(360 * this.params.orbitStartPosition);
     }
 
-    this.entity.add(this.sphere);
-
     return this;
   }
 
-  public animate(clock: Clock, speed: number) {
+  public animate(clock: Clock, speed: number, camera: Camera) {
     clock.getElapsedTime();
 
     if (this.params.orbitEntity) {
-      const orbitSpeed = this.params.orbitSpeed * speed;
+      // (/60=mins /60=seconds /60=account for framerate)
+      const perSecond = this.params.orbitSpeed / 60 / 60 / 60;
+
+      const orbitSpeed = perSecond * speed;
       const orbitDirection = this.params.orbitDirection;
+
+      // as our planet/moon is positioned at the edge of our orbit circle
+      // "orbiting" is simply a matter of rotating the whole entity :)
       this.entity.rotation.y += orbitSpeed * orbitDirection;
     }
 
     if (this.params.spinSpeed) {
-      this.sphere.rotation.y += this.params.spinSpeed * speed * this.params.spinDirection;
+      const perSecond = this.params.spinSpeed / 60 / 60 / 60;
+      this.sphere.rotation.y += perSecond * speed * this.params.spinDirection;
+    }
+
+    if (this.params.hasLabel) {
+      // keep the label the same size regardless of camera zoom
+      const scaleFactor = 24;
+      const scale = this.labelScaleVector.subVectors(this.sphere.position, camera.position).length() / scaleFactor;
+      this.labelSprite.scale.set(scale, scale * this.labelAspectRatio, 1);
+      this.labelSprite.position.y = this.radius;
     }
   }
 
@@ -186,6 +212,7 @@ export abstract class Entity {
     this.heightMapTexture?.dispose();
     this.colourMapTexture?.dispose();
     this.texture?.dispose();
+    this.labelTexture?.dispose();
 
     // call implemented dispose method
     this._dispose();
@@ -274,5 +301,40 @@ export abstract class Entity {
     const vertices = new Float32Array(verts);
     this.orbitGeometry.setAttribute("position", new BufferAttribute(vertices, 3));
     return new Line(this.orbitGeometry, this.orbit);
+  }
+
+  private addLabel() {
+    this.labelContext = document.createElement("canvas").getContext("2d") as CanvasRenderingContext2D;
+
+    const fontSize = 44;
+    this.labelContext.canvas.width = 384;
+    this.labelContext.canvas.height = 384;
+
+    this.labelContext.font = `${fontSize}pt 'Lucida Grande', sans-serif`;
+    // const textWidth = this.labelContext.measureText(this.name).width;
+
+    // this.labelContext.canvas.width = textWidth;
+    // this.labelContext.canvas.height = fontSize * 1.5;
+
+    this.labelAspectRatio = this.labelContext.canvas.height / this.labelContext.canvas.width;
+    // console.log(this.name, this.labelAspectRatio);
+
+    // this.labelContext.fillStyle = "rgba(255,0,0,0.2)";
+    // this.labelContext.fillRect(0, 0, this.labelContext.canvas.width, this.labelContext.canvas.height);
+
+    this.labelContext.fillStyle = "white";
+    this.labelContext.textAlign = "center";
+    this.labelContext.fillText(this.name, this.labelContext.canvas.width / 2, fontSize + 1);
+
+    this.labelTexture = new Texture(this.labelContext.canvas);
+    this.labelTexture.needsUpdate = true;
+    const spriteMaterial = new SpriteMaterial({
+      map: this.labelTexture,
+      transparent: true,
+    });
+    this.labelSprite = new Sprite(spriteMaterial);
+    // this.labelSprite.position.y = this.radius * 0.4;
+
+    this.sphere.add(this.labelSprite);
   }
 }

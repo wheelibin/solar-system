@@ -9,4 +9,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  font: 13px "Lucida Grande", sans-serif;
+  text-shadow: 0 -1px 0 #111;
 }

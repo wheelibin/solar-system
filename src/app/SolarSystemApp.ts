@@ -13,12 +13,15 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import cloneDeep from "lodash/cloneDeep";
+
 import { Entity, EntityParams, EntityType } from "./entities/Entity";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { GUI } from "three/examples/jsm/libs/dat.gui.module";
 
-import { SolarSystemGenerator } from "./utils/SolarSystemGenerator";
+import { SolarSystemGenerator } from "./utils/RealisticSolarSystemGenerator";
+
 import { Moon } from "./entities/Moon";
 import { ClassM } from "./entities/ClassM";
 import { Star } from "./entities/Star";
@@ -44,7 +47,6 @@ export class SolarSystemApp {
   private gui!: GUI;
   private guiViewActionsFolder!: GUI;
   private guiPlanetsFolder!: GUI;
-  // private planetInfoBox: HTMLElement;
 
   private ambientLight!: AmbientLight;
   private pointLight!: PointLight;
@@ -55,10 +57,11 @@ export class SolarSystemApp {
   public onSelectPlanet!: (planet?: SolarSystemEntity) => void;
 
   private options = {
-    seed: 2,
+    seed: 982174,
     simulationSpeed: 3,
     showOrbits: true,
     followPlanetName: "Star 1",
+    realisticScale: false,
   };
 
   private buttonHandlers = {
@@ -75,7 +78,7 @@ export class SolarSystemApp {
   };
 
   constructor() {
-    this.solarSystem = new SolarSystemGenerator().generate(this.options.seed);
+    this.solarSystem = new SolarSystemGenerator(this.options.seed).generate();
 
     this.scene = new Scene();
     this.scene.background = new Color().setHex(0x000000);
@@ -93,7 +96,7 @@ export class SolarSystemApp {
 
     // Camera
     this.camera = new Camera();
-    this.camera = new PerspectiveCamera(25, window.innerWidth / window.innerHeight, 50, 1e7);
+    this.camera = new PerspectiveCamera(25, window.innerWidth / window.innerHeight, 50, 1e10);
     this.cameraInitialPosition = [0, this.solarSystem.stars[0].radius * 6, this.solarSystem.stars[0].radius * 20];
     this.camera.position.set(...this.cameraInitialPosition);
 
@@ -112,6 +115,7 @@ export class SolarSystemApp {
     // Controls
     this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
     this.orbitControls.enableDamping = true;
+    this.orbitControls.update();
 
     // Stats
     this.stats = new (Stats as any)();
@@ -124,16 +128,6 @@ export class SolarSystemApp {
     this.gui.add(this.buttonHandlers, "newSeed").name("New Seed");
     this.gui.add(this.options, "seed").name("Seed").onFinishChange(this.buttonHandlers.changeSeed);
     this.gui.add(this.options, "simulationSpeed", 0, 20, 0.1).name("Simulation Speed");
-
-    // this.planetInfoBox = document.createElement("div");
-    // this.planetInfoBox.className = "planet-info-box";
-    // this.planetInfoBox.innerHTML = `
-    // <h1 class='planet-info-box__name'></h1>
-    // <div class='planet-info-box__prop-container'>
-
-    // </div>
-    // `;
-    // document.body.appendChild(this.planetInfoBox);
   }
 
   public init = () => {
@@ -143,11 +137,10 @@ export class SolarSystemApp {
 
     this.gui.updateDisplay();
     this.clearScene();
-    this.solarSystem = new SolarSystemGenerator().generate(this.options.seed);
-
-    this.resetView();
+    this.solarSystem = new SolarSystemGenerator(this.options.seed).generate();
 
     this._init().then(() => {
+      this.resetView();
       this.animate();
       if (this.onInitialised) {
         this.onInitialised();
@@ -169,14 +162,22 @@ export class SolarSystemApp {
     this.pointLight.position.set(0, 0, 0);
     this.scene.add(this.pointLight);
 
-    await this.createSolarSystem();
+    if (this.options.realisticScale) {
+      await this.renderRealisticSolarSystem();
+      this.camera.position.set(...this.cameraInitialPosition);
+    } else {
+      await this.renderSolarSystem();
+      this.camera.position.set(...this.cameraInitialPosition).divideScalar(500);
+    }
 
     const planets = this.bodies.filter((b) => b.entityType === EntityType.Planet);
     const star = this.bodies.filter((b) => b.entityType === EntityType.Star)[0];
 
     this.guiViewActionsFolder = this.gui.addFolder("View Actions");
     this.guiViewActionsFolder.open();
+    this.guiViewActionsFolder.add(this.options, "realisticScale").name("True Scale").onChange(this.init);
     this.guiViewActionsFolder.add(this.options, "showOrbits").name("Show Orbits").onChange(this.toggleOrbits);
+
     this.guiViewActionsFolder
       .add(this.options, "followPlanetName", [star.name, ...planets.map((p) => p.name)])
       .name("Centre of View");
@@ -198,10 +199,9 @@ export class SolarSystemApp {
     requestAnimationFrame(this.animate);
 
     this.bodies.forEach((body) => {
-      body.animate(this.clock, this.options.simulationSpeed / 5);
+      body.animate(this.clock, this.options.simulationSpeed / 5, this.camera);
     });
 
-    this.orbitControls.update();
     this.stats.update();
 
     if (this.showPlanetId > -1) {
@@ -218,6 +218,7 @@ export class SolarSystemApp {
         const pos = new Vector3();
         planet.sphere.getWorldPosition(pos);
         this.orbitControls.target.set(pos.x, pos.y, pos.z);
+        this.orbitControls.update();
       }
     }
 
@@ -247,8 +248,13 @@ export class SolarSystemApp {
 
   private resetView = () => {
     this.showPlanetId = -1;
-    this.camera.position.set(...this.cameraInitialPosition);
-    this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
+
+    if (this.options.realisticScale) {
+      this.camera.position.set(...this.cameraInitialPosition);
+    } else {
+      this.camera.position.set(...this.cameraInitialPosition).divideScalar(500);
+    }
+
     if (this.onSelectPlanet) {
       this.onSelectPlanet(undefined);
     }
@@ -271,19 +277,26 @@ export class SolarSystemApp {
     }
   };
 
-  private createSolarSystem = async () => {
-    const maxPlanetOrbitSpeed = 0.005; // Random.getRandomFloat(0.001, 0.005, [this.options.seed, seedIndexes.orbitSpeed]);
-    const maxMoonOrbitSpeed = 0.005; // Random.getRandomFloat(0.001, 0.005, [this.options.seed, seedIndexes.orbitSpeed]);
+  /**
+   * Renders a 1000th scale model of the solar system
+   */
+  private renderRealisticSolarSystem = async () => {
+    // scale radiuses and speeds down to displayable proportions
+    const viewScale = 1 / 1000;
 
     for (const star of this.solarSystem.stars) {
-      const starEntity = new Star(star.id, star.name, EntityType.Star, star.radius, {
+      const radius = star.radius * viewScale;
+      const orbitRadius = star.orbitRadius * viewScale;
+      const orbitSpeed = star.orbitSpeed * viewScale;
+
+      const starEntity = new Star(star.id, star.name, EntityType.Star, radius, {
         baseSeed: star.seed,
         position: star.position ? new Vector3(...star.position) : new Vector3(0, 0, 0),
         colour: new Color(0xffca20),
         orbitEntity: false,
-        orbitRadius: star.orbitRadius,
+        orbitRadius: orbitRadius,
         orbitDirection: star.orbitDirection,
-        orbitSpeed: star.orbitSpeed,
+        orbitSpeed: orbitSpeed,
         orbitInclanation: star.orbitInclanation,
         orbitStartPosition: star.orbitStartPosition,
         spinSpeed: star.spinSpeed,
@@ -296,39 +309,175 @@ export class SolarSystemApp {
       for (let planetIndex = 0; planetIndex < this.solarSystem.planets.length; planetIndex++) {
         const planet = this.solarSystem.planets[planetIndex];
 
+        const radius = planet.radius * viewScale;
+        const orbitRadius = planet.orbitRadius * viewScale;
+        const orbitSpeed = planet.orbitSpeed * viewScale;
+
         const orbitEntity = this.bodies.find((b) => b.id === planet.orbitEntityId) as Entity;
+
         const planetParams: EntityParams = {
           baseSeed: planet.seed,
           position: planet.position ? new Vector3(...planet.position) : orbitEntity.entity.position,
           terrainHeight: planet.terrainHeight,
           orbitEntity: orbitEntity,
-          orbitRadius: planet.orbitRadius,
+          orbitRadius: orbitRadius,
           orbitDirection: planet.orbitDirection,
-          orbitSpeed: planet.orbitSpeed * maxPlanetOrbitSpeed,
+          orbitSpeed: orbitSpeed,
           orbitInclanation: planet.orbitInclanation,
           orbitStartPosition: planet.orbitStartPosition,
           spinSpeed: planet.spinSpeed,
           spinDirection: planet.spinDirection,
+          hasLabel: true,
           onShow: this.handleShowPlanet,
         };
 
         const planetEntity =
           planetIndex === 2
-            ? new Earth(planet.id, planet.name, EntityType.Planet, planet.radius, planetParams)
-            : new ClassM(planet.id, planet.name, EntityType.Planet, planet.radius, planetParams);
+            ? new Earth(planet.id, planet.name, EntityType.Planet, radius, planetParams)
+            : new ClassM(planet.id, planet.name, EntityType.Planet, radius, planetParams);
         await planetEntity.create();
 
         for (const moon of planet.moons) {
+          const radius = moon.radius * viewScale;
+          const orbitRadius = moon.orbitRadius * viewScale;
+          const orbitSpeed = moon.orbitSpeed * viewScale;
+
           const orbitEntity = planetEntity;
-          const moonEntity = new Moon(moon.id, moon.name, EntityType.Moon, moon.radius, {
+
+          const moonEntity = new Moon(moon.id, moon.name, EntityType.Moon, radius, {
             baseSeed: moon.seed,
             position: moon.position ? new Vector3(...moon.position) : orbitEntity.entity.position,
             colour: moon.rgb ? new Color(...moon.rgb) : new Color(1, 1, 1),
             terrainHeight: moon.terrainHeight,
             orbitEntity: orbitEntity,
-            orbitRadius: moon.orbitRadius,
+            orbitRadius: orbitRadius,
             orbitDirection: moon.orbitDirection,
-            orbitSpeed: moon.orbitSpeed * maxMoonOrbitSpeed,
+            orbitSpeed: orbitSpeed,
+            orbitInclanation: moon.orbitInclanation,
+            orbitStartPosition: moon.orbitStartPosition,
+            spinSpeed: moon.spinSpeed,
+            spinDirection: planet.spinDirection,
+          });
+          await moonEntity.create();
+          this.bodies.push(moonEntity);
+          // add the moon to the planet (so it follows the planet's orbit)
+          planetEntity.entity.add(moonEntity.entity);
+        }
+
+        this.bodies.push(planetEntity);
+        this.scene.add(planetEntity.entity);
+      }
+    }
+  };
+
+  /**
+   * Renders a view friendly, compressed version of the solar system
+   */
+  private renderSolarSystem = async () => {
+    // scale radiuses and speeds down to displayable proportions
+    const viewScale = 1 / 1000;
+
+    for (const star of this.solarSystem.stars) {
+      const starRadius = star.radius * viewScale * 4;
+      const orbitRadius = star.orbitRadius * viewScale;
+      const orbitSpeed = star.orbitSpeed * viewScale;
+
+      const starEntity = new Star(star.id, star.name, EntityType.Star, starRadius, {
+        baseSeed: star.seed,
+        position: star.position ? new Vector3(...star.position) : new Vector3(0, 0, 0),
+        colour: new Color(0xffca20),
+        orbitEntity: false,
+        orbitRadius: orbitRadius,
+        orbitDirection: star.orbitDirection,
+        orbitSpeed: orbitSpeed,
+        orbitInclanation: star.orbitInclanation,
+        orbitStartPosition: star.orbitStartPosition,
+        spinSpeed: star.spinSpeed,
+        spinDirection: star.spinDirection,
+      });
+      await starEntity.create();
+      this.bodies.push(starEntity);
+      this.scene.add(starEntity.entity);
+
+      const planets = cloneDeep(this.solarSystem.planets);
+
+      // increase the radiuses (and moons to match)
+      for (const planet of planets) {
+        const scale = 4;
+        planet.radius *= scale;
+        for (const moon of planet.moons) {
+          moon.radius *= scale;
+          moon.orbitSpeed *= scale;
+        }
+      }
+
+      // compress the orbits
+      for (let i = 0; i < planets.length; i++) {
+        const planet = planets[i];
+        const planetMoonRadius = planet.moons[planet.moons.length - 1].orbitRadius;
+
+        if (i === 0) {
+          planet.orbitRadius = star.radius * 2 + planetMoonRadius * 2;
+        } else {
+          const prevPlanet = planets[i - 1];
+          const prevPlanetMoonRadius = prevPlanet.moons[prevPlanet.moons.length - 1].orbitRadius;
+          planet.orbitRadius = prevPlanet.orbitRadius + prevPlanetMoonRadius + planetMoonRadius;
+
+          // Extend the orbit slightly based on the actual orbit sizes
+          const r =
+            (this.solarSystem.planets[i].orbitRadius - this.solarSystem.planets[i - 1].orbitRadius) /
+            this.solarSystem.planets[this.solarSystem.planets.length - 1].orbitRadius;
+
+          planet.orbitRadius += r * planet.orbitRadius * 0.5;
+        }
+      }
+
+      for (let planetIndex = 0; planetIndex < planets.length; planetIndex++) {
+        const planet = planets[planetIndex];
+
+        const radius = planet.radius * viewScale;
+        const orbitRadius = planet.orbitRadius * viewScale;
+        const orbitSpeed = planet.orbitSpeed * viewScale;
+
+        const orbitEntity = this.bodies.find((b) => b.id === planet.orbitEntityId) as Entity;
+
+        const planetParams: EntityParams = {
+          baseSeed: planet.seed,
+          position: planet.position ? new Vector3(...planet.position) : orbitEntity.entity.position,
+          terrainHeight: planet.terrainHeight,
+          orbitEntity: orbitEntity,
+          orbitRadius: orbitRadius,
+          orbitDirection: planet.orbitDirection,
+          orbitSpeed: orbitSpeed,
+          orbitInclanation: planet.orbitInclanation,
+          orbitStartPosition: planet.orbitStartPosition,
+          spinSpeed: planet.spinSpeed,
+          spinDirection: planet.spinDirection,
+          hasLabel: true,
+          onShow: this.handleShowPlanet,
+        };
+
+        const planetEntity =
+          planetIndex === 2
+            ? new Earth(planet.id, planet.name, EntityType.Planet, radius, planetParams)
+            : new ClassM(planet.id, planet.name, EntityType.Planet, radius, planetParams);
+        await planetEntity.create();
+
+        for (const moon of planet.moons) {
+          const radius = moon.radius * viewScale;
+          const orbitRadius = moon.orbitRadius * viewScale;
+          const orbitSpeed = moon.orbitSpeed * viewScale * 4; // 4 = fudge factor to get moons moving
+          const orbitEntity = planetEntity;
+
+          const moonEntity = new Moon(moon.id, moon.name, EntityType.Moon, radius, {
+            baseSeed: moon.seed,
+            position: moon.position ? new Vector3(...moon.position) : orbitEntity.entity.position,
+            colour: moon.rgb ? new Color(...moon.rgb) : new Color(1, 1, 1),
+            terrainHeight: moon.terrainHeight,
+            orbitEntity: orbitEntity,
+            orbitRadius: orbitRadius,
+            orbitDirection: moon.orbitDirection,
+            orbitSpeed: orbitSpeed,
             orbitInclanation: moon.orbitInclanation,
             orbitStartPosition: moon.orbitStartPosition,
             spinSpeed: moon.spinSpeed,
