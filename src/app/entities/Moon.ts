@@ -6,7 +6,7 @@ export class Moon extends Entity {
   protected _dispose(): void {}
 
   protected getMapColour(height: number, y: number): number[] {
-    const ratio = height / 64;
+    const ratio = height / 128;
 
     const { r, g, b } = this.params.colour!;
 

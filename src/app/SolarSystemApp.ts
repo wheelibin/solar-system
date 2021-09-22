@@ -47,6 +47,7 @@ export class SolarSystemApp {
   private gui!: GUI;
   private guiViewActionsFolder!: GUI;
   private guiPlanetsFolder!: GUI;
+  private planetPositionVector = new Vector3();
 
   private ambientLight!: AmbientLight;
   private pointLight!: PointLight;
@@ -183,7 +184,8 @@ export class SolarSystemApp {
 
     this.guiViewActionsFolder
       .add(this.options, "followPlanetName", [star.name, ...planets.map((p) => p.name)])
-      .name("Centre of View");
+      .name("Centre of View")
+      .onChange(this.onFollowPlanetNameChange);
     this.guiViewActionsFolder.add(this.buttonHandlers, "resetView").name("Reset View");
 
     this.guiViewActionsFolder.add(this.options, "trueScale").name("True Scale").onChange(this.init);
@@ -225,18 +227,20 @@ export class SolarSystemApp {
     if (this.showPlanetId > -1) {
       const planet = this.bodies.find((b) => b.id === this.showPlanetId);
       if (planet) {
-        const pos = new Vector3();
-        planet.sphere.getWorldPosition(pos);
-        this.camera.position.set(pos.x + planet.radius * 2, pos.y + planet.radius * 2, pos.z + planet.radius * 10);
-        this.camera.lookAt(pos.x, pos.y, pos.z);
+        planet.sphere.getWorldPosition(this.planetPositionVector);
+        const { x, y, z } = this.planetPositionVector;
+        this.camera.position.set(x + planet.radius * 2, y + planet.radius * 2, z + planet.radius * 10);
+        this.camera.lookAt(x, y, z);
       }
     } else {
-      const planet = this.bodies.find((b) => b.name === this.options.followPlanetName);
-      if (planet) {
-        const pos = new Vector3();
-        planet.sphere.getWorldPosition(pos);
-        this.orbitControls.target.set(pos.x, pos.y, pos.z);
-        this.orbitControls.update();
+      if (this.options.followPlanetName !== "Star 1") {
+        const planet = this.bodies.find((b) => b.name === this.options.followPlanetName);
+        if (planet) {
+          planet.sphere.getWorldPosition(this.planetPositionVector);
+          const { x, y, z } = this.planetPositionVector;
+          this.orbitControls.target.set(x, y, z);
+          this.orbitControls.update();
+        }
       }
     }
 
@@ -292,6 +296,17 @@ export class SolarSystemApp {
       if (body.orbit) {
         body.orbit.opacity = body.orbit.opacity === 0 ? 0.5 : 0;
       }
+    }
+  };
+
+  /**
+   * Might have to rework this if multi-star systems are added
+   * but for now it saves updating the orbit controls each render frame if we're just looking at the star
+   */
+  private onFollowPlanetNameChange = () => {
+    if (this.options.followPlanetName === "Star 1") {
+      this.orbitControls.target.set(0, 0, 0);
+      this.orbitControls.update();
     }
   };
 
