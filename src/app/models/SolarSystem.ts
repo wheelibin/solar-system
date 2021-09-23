@@ -14,6 +14,9 @@ export type SolarSystemEntity = {
   spinSpeed: number;
   spinDirection: number;
 
+  // A number between 0-1 representing the position in the entire system
+  // i.e. distanceFromStar / furthestPlanetDistanceFromStar
+  positionInSystem?: number;
   position?: [number, number, number];
   rgb?: [number, number, number];
 };

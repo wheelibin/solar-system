@@ -115,6 +115,8 @@ export abstract class Entity {
         map: this.colourMapTexture,
         displacementMap: this.heightMapTexture,
         displacementScale: terrainHeight,
+        shininess: 0,
+        specular: 0x000000,
       });
     } else {
       if (this.params.texturePath) {
@@ -295,7 +297,7 @@ export abstract class Entity {
     var segmentCount = 128;
     this.orbitGeometry = new BufferGeometry();
     const verts = [];
-    this.orbit = new LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
+    this.orbit = new LineBasicMaterial({ color: 0x666666, opacity: 1, transparent: false });
 
     for (var i = 0; i <= segmentCount; i++) {
       var theta = (i / segmentCount) * Math.PI * 2;
@@ -314,16 +316,8 @@ export abstract class Entity {
     this.labelContext.canvas.height = 384;
 
     this.labelContext.font = `${fontSize}pt 'Lucida Grande', sans-serif`;
-    // const textWidth = this.labelContext.measureText(this.name).width;
-
-    // this.labelContext.canvas.width = textWidth;
-    // this.labelContext.canvas.height = fontSize * 1.5;
 
     this.labelAspectRatio = this.labelContext.canvas.height / this.labelContext.canvas.width;
-    // console.log(this.name, this.labelAspectRatio);
-
-    // this.labelContext.fillStyle = "rgba(255,0,0,0.2)";
-    // this.labelContext.fillRect(0, 0, this.labelContext.canvas.width, this.labelContext.canvas.height);
 
     this.labelContext.fillStyle = "white";
     this.labelContext.textAlign = "center";
@@ -336,7 +330,6 @@ export abstract class Entity {
       transparent: true,
     });
     this.labelSprite = new Sprite(spriteMaterial);
-    // this.labelSprite.position.y = this.radius * 0.4;
 
     this.sphere.add(this.labelSprite);
   }

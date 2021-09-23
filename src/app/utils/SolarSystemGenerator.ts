@@ -154,6 +154,7 @@ export class SolarSystemGenerator {
         const distanceFromStar = planet.orbitRadius;
         const furthestPlanetOrbitRadius = this.solarSystem.planets[this.solarSystem.planets.length - 1].orbitRadius;
         const ratio = 1.5 - distanceFromStar / furthestPlanetOrbitRadius;
+        planet.positionInSystem = distanceFromStar / furthestPlanetOrbitRadius;
         planet.orbitSpeed = ratio * solarSystemValues.maxPlanetOrbitSpeed;
       }
 

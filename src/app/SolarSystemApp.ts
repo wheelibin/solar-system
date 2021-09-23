@@ -100,7 +100,7 @@ export class SolarSystemApp {
     // Camera
     this.camera = new Camera();
     this.camera = new PerspectiveCamera(25, window.innerWidth / window.innerHeight, 50, 1e10);
-    this.cameraInitialPosition = [0, this.solarSystem.stars[0].radius * 6, this.solarSystem.stars[0].radius * 20];
+    this.cameraInitialPosition = [0, this.solarSystem.stars[0].radius * 6, this.solarSystem.stars[0].radius * 30];
     this.camera.position.set(...this.cameraInitialPosition);
 
     this.camera.lookAt(0, 0, 0);
@@ -134,6 +134,8 @@ export class SolarSystemApp {
   }
 
   public init = () => {
+    this.showPlanetId = -1;
+
     if (this.onInitialising) {
       this.onInitialising();
     }
@@ -161,12 +163,25 @@ export class SolarSystemApp {
     // scene.add(axesHelper);
 
     // Lighting
-    this.ambientLight = new AmbientLight(0xffffff, 0.15);
-    this.scene.add(this.ambientLight);
-
     this.pointLight = new PointLight(sunColour, 1);
+
+    let ambientLightIntensity = 0.15;
+    if (this.options.trueScale) {
+      // star
+      this.pointLight.power = 1.05e14; // lumens
+      this.renderer.physicallyCorrectLights = true;
+      this.pointLight.decay = 2;
+      // needs slightly more ambient light because planets aren't illuminated as much
+      ambientLightIntensity = 0.3;
+    } else {
+      this.pointLight.decay = 1;
+      this.renderer.physicallyCorrectLights = false;
+    }
     this.pointLight.position.set(0, 0, 0);
     this.scene.add(this.pointLight);
+
+    this.ambientLight = new AmbientLight(0xffffff, ambientLightIntensity);
+    this.scene.add(this.ambientLight);
 
     if (this.options.trueScale) {
       await this.renderRealisticSolarSystem();
@@ -186,7 +201,6 @@ export class SolarSystemApp {
       .add(this.options, "followPlanetName", [star.name, ...planets.map((p) => p.name)])
       .name("Centre of View")
       .onChange(this.onFollowPlanetNameChange);
-    this.guiViewActionsFolder.add(this.buttonHandlers, "resetView").name("Reset View");
 
     this.guiViewActionsFolder.add(this.options, "trueScale").name("True Scale").onChange(this.init);
     this.guiViewActionsFolder.add(this.options, "showOrbits").name("Orbits").onChange(this.toggleOrbits);
@@ -194,6 +208,8 @@ export class SolarSystemApp {
     this.guiViewActionsFolder.add(this.options, "showStats").name("Stats");
 
     this.guiPlanetsFolder = this.gui.addFolder("Planets");
+    this.guiPlanetsFolder.open();
+    this.guiPlanetsFolder.add(this.buttonHandlers, "resetView").name("Reset View");
     for (let index = 0; index < planets.length; index++) {
       const planet = planets[index];
       this.guiPlanetsFolder.add(planet, "show").name(`#${index + 1}: ${planet.name}`);
@@ -213,7 +229,7 @@ export class SolarSystemApp {
         this.clock,
         this.options.simulationSpeed / 2,
         this.camera,
-        this.options.showPlanetLabels && this.showPlanetId === -1
+        this.options.showPlanetLabels && this.showPlanetId !== body.id
       );
     });
 
@@ -229,7 +245,7 @@ export class SolarSystemApp {
       if (planet) {
         planet.sphere.getWorldPosition(this.planetPositionVector);
         const { x, y, z } = this.planetPositionVector;
-        this.camera.position.set(x + planet.radius * 2, y + planet.radius * 2, z + planet.radius * 10);
+        this.camera.position.set(x + planet.radius * 5, y, z + planet.radius * 10);
         this.camera.lookAt(x, y, z);
       }
     } else {
@@ -280,6 +296,7 @@ export class SolarSystemApp {
     if (this.onSelectPlanet) {
       this.onSelectPlanet(undefined);
     }
+    this.orbitControls.update();
   };
 
   private handleShowPlanet = (id: number) => {
@@ -294,7 +311,7 @@ export class SolarSystemApp {
   private toggleOrbits = () => {
     for (const body of this.bodies) {
       if (body.orbit) {
-        body.orbit.opacity = body.orbit.opacity === 0 ? 0.5 : 0;
+        body.orbit.visible = !body.orbit.visible;
       }
     }
   };
@@ -360,6 +377,7 @@ export class SolarSystemApp {
           orbitStartPosition: planet.orbitStartPosition,
           spinSpeed: planet.spinSpeed,
           spinDirection: planet.spinDirection,
+          // positionInSystem: planet.positionInSystem,
           hasLabel: true,
           onShow: this.handleShowPlanet,
         };
