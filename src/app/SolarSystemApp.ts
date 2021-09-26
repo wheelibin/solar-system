@@ -13,6 +13,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { Easing, Tween, update as tweenUpdate } from "@tweenjs/tween.js";
 import cloneDeep from "lodash/cloneDeep";
 
 import { Entity, EntityParams, EntityType } from "./entities/Entity";
@@ -29,6 +30,7 @@ import { Earth } from "./entities/Earth";
 import { SolarSystem, SolarSystemEntity } from "./models/SolarSystem";
 
 const sunColour = 0xf7e096;
+const animationDuration = 4000;
 
 export class SolarSystemApp {
   private solarSystem!: SolarSystem;
@@ -43,6 +45,8 @@ export class SolarSystemApp {
   private stats!: Stats;
   private showPlanetId!: number;
   private cameraInitialPosition!: [number, number, number];
+  private cameraLookAtTarget = new Vector3(0, 0, 0);
+  private cameraPositionVector = new Vector3();
   private spaceTexture!: Texture;
   private gui!: GUI;
   private guiViewActionsFolder!: GUI;
@@ -51,6 +55,8 @@ export class SolarSystemApp {
 
   private ambientLight!: AmbientLight;
   private pointLight!: PointLight;
+
+  private cameraReachedTarget!: boolean;
 
   // events
   public onInitialising!: () => void;
@@ -103,7 +109,7 @@ export class SolarSystemApp {
     this.cameraInitialPosition = [0, this.solarSystem.stars[0].radius * 6, this.solarSystem.stars[0].radius * 30];
     this.camera.position.set(...this.cameraInitialPosition);
 
-    this.camera.lookAt(0, 0, 0);
+    this.camera.lookAt(this.cameraLookAtTarget);
 
     // Renderer
     this.renderer = new WebGLRenderer({
@@ -160,7 +166,7 @@ export class SolarSystemApp {
     this.showPlanetId = -1;
 
     // var axesHelper = new AxesHelper(5000);
-    // scene.add(axesHelper);
+    // this.scene.add(axesHelper);
 
     // Lighting
     this.pointLight = new PointLight(sunColour, 1);
@@ -242,11 +248,13 @@ export class SolarSystemApp {
 
     if (this.showPlanetId > -1) {
       const planet = this.bodies.find((b) => b.id === this.showPlanetId);
-      if (planet) {
+
+      if (planet && this.cameraReachedTarget) {
         planet.sphere.getWorldPosition(this.planetPositionVector);
         const { x, y, z } = this.planetPositionVector;
         this.camera.position.set(x + planet.radius * 5, y, z + planet.radius * 10);
-        this.camera.lookAt(x, y, z);
+        this.cameraLookAtTarget.set(x, y, z);
+        this.camera.lookAt(this.cameraLookAtTarget);
       }
     } else {
       if (this.options.followPlanetName !== "Star 1") {
@@ -260,6 +268,7 @@ export class SolarSystemApp {
       }
     }
 
+    tweenUpdate();
     this.renderer.render(this.scene, this.camera);
   };
 
@@ -288,10 +297,25 @@ export class SolarSystemApp {
     this.showPlanetId = -1;
 
     if (this.options.trueScale) {
-      this.camera.position.set(...this.cameraInitialPosition);
+      this.cameraPositionVector.set(...this.cameraInitialPosition);
     } else {
-      this.camera.position.set(...this.cameraInitialPosition).divideScalar(500);
+      this.cameraPositionVector.set(...this.cameraInitialPosition).divideScalar(500);
     }
+
+    // animate camera position
+    new Tween(this.camera.position)
+      .to(this.cameraPositionVector)
+      .duration(animationDuration)
+      .easing(Easing.Quintic.InOut)
+      .start();
+
+    //animate camera lookAt
+    new Tween(this.cameraLookAtTarget)
+      .to(new Vector3(0, 0, 0))
+      .duration(animationDuration)
+      .easing(Easing.Quintic.InOut)
+      .onUpdate(() => this.camera.lookAt(this.cameraLookAtTarget))
+      .start();
 
     if (this.onSelectPlanet) {
       this.onSelectPlanet(undefined);
@@ -301,6 +325,39 @@ export class SolarSystemApp {
 
   private handleShowPlanet = (id: number) => {
     this.showPlanetId = id;
+
+    const planet = this.bodies.find((b) => b.id === this.showPlanetId);
+    if (planet) {
+      planet.sphere.getWorldPosition(this.planetPositionVector);
+      const { x, y, z } = this.planetPositionVector;
+      const target = { x: x + planet.radius * 5, y, z: z + planet.radius * 10 };
+
+      this.cameraReachedTarget = false;
+
+      // animate camera position
+      const tween = new Tween(this.camera.position)
+        .to(target)
+        .duration(animationDuration)
+        .easing(Easing.Quintic.InOut)
+        .start()
+        .onUpdate(() => {
+          planet.sphere.getWorldPosition(this.planetPositionVector);
+          const { x, y, z } = this.planetPositionVector;
+          const target = { x: x + planet.radius * 5, y, z: z + planet.radius * 10 };
+          tween.to(target);
+        })
+        .onComplete(() => {
+          this.cameraReachedTarget = true;
+        });
+
+      //animate camera lookAt
+      new Tween(this.cameraLookAtTarget)
+        .to(this.planetPositionVector)
+        .duration(animationDuration)
+        .easing(Easing.Cubic.Out)
+        .onUpdate(() => this.camera.lookAt(this.cameraLookAtTarget))
+        .start();
+    }
 
     if (this.onSelectPlanet) {
       const planet = this.solarSystem.planets.find((p) => p.id === id) as SolarSystemEntity;
