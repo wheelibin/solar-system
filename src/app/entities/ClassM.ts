@@ -84,7 +84,7 @@ export class ClassM extends Entity {
   }
 
   private getRandomColour(colIndex: number) {
-    const seed = [...this.params.baseSeed, colIndex];
+    const seed = [...this.params.seed, colIndex];
 
     const min = 0.2;
     return [

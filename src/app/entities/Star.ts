@@ -1,10 +1,11 @@
-import { Entity, EntityParams, EntityType } from "./Entity";
+import { EntityParams } from "../models/EntityParams";
+import { Entity } from "./Entity";
 
 export class Star extends Entity {
   protected maxTerrainHeight = 0;
 
-  constructor(id: number, name: string, entityType: EntityType, radius: number, params: EntityParams) {
-    super(id, name, entityType, radius, params);
+  constructor(radius: number, params: EntityParams) {
+    super(radius, params);
 
     this.params.terrainHeight = 0;
     this.params.texturePath = "assets/sun.jpg";

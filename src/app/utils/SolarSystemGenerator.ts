@@ -1,4 +1,4 @@
-import { SolarSystem, SolarSystemEntity } from "../models/SolarSystem";
+import { EntityType, SolarSystem, SolarSystemEntity } from "../models/SolarSystem";
 import { planetNames } from "./planetNames";
 import { Random } from "./Random";
 
@@ -28,9 +28,17 @@ const solarSystemValues = {
   maxPlanetSpinSpeed: 45583, //jupiter
 
   minDistanceBetweenPlanets: 41400000, //earth->venus
+
+  // https://www.nasa.gov/image-feature/picturing-our-solar-systems-asteroid-belt
+  minAsteroidSize: 200, //10,
+  maxAsteroidSize: 530,
+
+  // our asteroid belt sits between mars and jupiter
+  // so use that as a basis for including an asteroid belt or not
+  marsToJupiterDistance: 550390000,
 };
 
-const seedIndexes = {
+export const seedIndexes = {
   radius: 0,
   terrainHeight: 1,
   colour: 2,
@@ -44,6 +52,9 @@ const seedIndexes = {
   spinDirection: 10,
   orbitStartPosition: 11,
   planetName: 12,
+  rotation: 13,
+  scale: 14,
+  itemCount: 15,
 };
 
 export class SolarSystemGenerator {
@@ -52,7 +63,6 @@ export class SolarSystemGenerator {
 
   private solarSystem: SolarSystem = {
     stars: [],
-    planets: [],
   };
 
   constructor(seed: number) {
@@ -67,13 +77,14 @@ export class SolarSystemGenerator {
   public generate(starRadius: number = 695508): SolarSystem {
     const stars: SolarSystemEntity[] = [
       {
+        entityType: EntityType.Star,
         id: this.getNextId(),
         name: `Star ${this.entityId}`,
         seed: [this.seed, 0],
         position: [0, 0, 0],
         radius: starRadius,
         terrainHeight: 0,
-        moons: [],
+        satellites: [],
         orbitEntityId: 0,
         orbitRadius: 0,
         orbitSpeed: 0,
@@ -136,23 +147,51 @@ export class SolarSystemGenerator {
           ]);
 
           const moon = this.createMoon(moonIndex, baseSeed, moonRadius, moonOrbitRadiuses[moonIndex], numberOfMoons);
-          planet.moons.push(moon);
+          planet.satellites.push(moon);
         }
         // Calculate orbit speeds based on distance from planet
-        for (const moon of planet.moons) {
+        for (const moon of planet.satellites) {
           const distanceFromPlanet = moon.orbitRadius;
-          const furthestMoonOrbitRadius = planet.moons[planet.moons.length - 1].orbitRadius;
+          const furthestMoonOrbitRadius = planet.satellites[planet.satellites.length - 1].orbitRadius;
           const ratio = 1.5 - distanceFromPlanet / furthestMoonOrbitRadius;
           moon.orbitSpeed = ratio * solarSystemValues.maxMoonOrbitSpeed;
         }
 
-        this.solarSystem.planets.push(planet);
+        star.satellites.push(planet);
+
+        // if there's a big enough gap between planets, add an asteroid belt
+        if (planetIndex < numberOfPlanets - 1 && star.satellites.every((s) => s.entityType === EntityType.Planet)) {
+          const r1 = planetOrbitRadiuses[planetIndex];
+          const r2 = planetOrbitRadiuses[planetIndex + 1];
+          const numberOfAsteroids = Random.getRandomInt(500, 2000, [...baseSeed, planetIndex, seedIndexes.itemCount]);
+          if (r2 - r1 > solarSystemValues.marsToJupiterDistance) {
+            star.satellites.push({
+              entityType: EntityType.AsteroidBelt,
+              id: this.getNextId(),
+              name: "",
+              seed: [...baseSeed, planetIndex],
+              radius: solarSystemValues.minAsteroidSize,
+              maxRadius: solarSystemValues.maxAsteroidSize,
+              terrainHeight: 1,
+              satellites: [],
+              orbitEntityId: star.id,
+              orbitRadius: r1 + (r2 - r1) / 2,
+              orbitDirection: 1,
+              orbitSpeed: 1,
+              orbitInclanation: 0,
+              orbitStartPosition: 0,
+              spinSpeed: 0,
+              spinDirection: 1,
+              itemCount: numberOfAsteroids,
+            });
+          }
+        }
       }
 
       // Calculate orbit speeds based on distance from star
-      for (const planet of this.solarSystem.planets) {
+      for (const planet of star.satellites) {
         const distanceFromStar = planet.orbitRadius;
-        const furthestPlanetOrbitRadius = this.solarSystem.planets[this.solarSystem.planets.length - 1].orbitRadius;
+        const furthestPlanetOrbitRadius = star.satellites[star.satellites.length - 1].orbitRadius;
         const ratio = 1.5 - distanceFromStar / furthestPlanetOrbitRadius;
         planet.positionInSystem = distanceFromStar / furthestPlanetOrbitRadius;
         planet.orbitSpeed = ratio * solarSystemValues.maxPlanetOrbitSpeed;
@@ -200,6 +239,7 @@ export class SolarSystemGenerator {
     const randomSpinSpeed = Random.getRandomFloat(0.001, 0.005, [...baseSeed, seedIndexes.spinSpeed]);
 
     const moon: SolarSystemEntity = {
+      entityType: EntityType.Moon,
       id: this.getNextId(),
       name: `Moon ${index + 1}`,
       seed: baseSeed,
@@ -214,7 +254,7 @@ export class SolarSystemGenerator {
       spinSpeed: randomSpinSpeed,
       spinDirection: Random.coinToss([...baseSeed, seedIndexes.spinDirection]) ? 1 : -1,
       rgb: getRandomRgb([...baseSeed, seedIndexes.colour]),
-      moons: [],
+      satellites: [],
     };
 
     return moon;
@@ -234,6 +274,7 @@ export class SolarSystemGenerator {
 
     // create the planet
     const planet: SolarSystemEntity = {
+      entityType: EntityType.Planet,
       id: this.getNextId(),
       name: planetName,
       seed: baseSeed,
@@ -247,7 +288,7 @@ export class SolarSystemGenerator {
       orbitStartPosition: Random.getRandom([...baseSeed, seedIndexes.orbitStartPosition]),
       spinSpeed: randomSpinSpeed,
       spinDirection: Random.coinToss([...baseSeed, seedIndexes.spinDirection]) ? 1 : -1,
-      moons: [],
+      satellites: [],
     };
 
     return planet;

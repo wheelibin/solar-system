@@ -21,45 +21,16 @@ import {
   Sprite,
   Camera,
 } from "three";
+import { EntityParams } from "../models/EntityParams";
 
 import { NoiseMapGenerator } from "../utils/NoiseMapGenerator";
-
-export enum EntityType {
-  Star,
-  Planet,
-  Moon,
-}
 
 type TerrainMaps = {
   heightMap: CanvasRenderingContext2D;
   map: CanvasRenderingContext2D;
 };
 
-export type EntityParams = {
-  baseSeed: number[];
-  position: Vector3;
-  orbitEntity: Entity | false;
-  orbitDirection: number;
-  orbitSpeed: number;
-  orbitRadius: number;
-  orbitInclanation: number;
-  orbitStartPosition: number;
-  spinSpeed: number;
-  spinDirection: number;
-
-  terrainHeight?: number;
-  colour?: Color;
-  castShadow?: boolean;
-  receiveShadow?: boolean;
-  texturePath?: string;
-  onShow?: (id: number) => void;
-  hasLabel?: boolean;
-};
-
 export abstract class Entity {
-  public id: number;
-  public name: string;
-  public entityType: EntityType;
   public entity: Group;
   public params: EntityParams;
   public radius: number;
@@ -69,25 +40,22 @@ export abstract class Entity {
   protected textureWidth: number;
   protected textureHeight: number;
   protected abstract maxTerrainHeight: number;
+  protected material!: Material;
+  protected heightMapTexture!: CanvasTexture;
+  protected colourMapTexture!: CanvasTexture;
 
-  private loader = new TextureLoader();
-  private sphereGeometry!: SphereBufferGeometry;
-  private orbitGeometry!: BufferGeometry;
-  private material!: Material;
-  private heightMapTexture!: CanvasTexture;
-  private colourMapTexture!: CanvasTexture;
-  private texture!: Texture;
+  protected loader = new TextureLoader();
+  protected sphereGeometry!: SphereBufferGeometry;
+  protected orbitGeometry!: BufferGeometry;
+  protected texture!: Texture;
 
-  private labelContext!: CanvasRenderingContext2D;
-  private labelTexture!: Texture;
-  private labelSprite!: Sprite;
-  private labelScaleVector = new Vector3();
-  private labelAspectRatio!: number;
+  protected labelContext!: CanvasRenderingContext2D;
+  protected labelTexture!: Texture;
+  protected labelSprite!: Sprite;
+  protected labelScaleVector = new Vector3();
+  protected labelAspectRatio!: number;
 
-  constructor(id: number, name: string, entityType: EntityType, radius: number, params: EntityParams) {
-    this.id = id;
-    this.name = name;
-    this.entityType = entityType;
+  constructor(radius: number, params: EntityParams) {
     this.radius = radius;
     this.params = params;
 
@@ -143,7 +111,7 @@ export abstract class Entity {
 
     if (this.params.orbitEntity) {
       const orbitEntityPos = this.params.orbitEntity.sphere.position;
-      const orbitRadius = this.params.orbitRadius || 400;
+      const orbitRadius = this.params.orbitRadius;
 
       // create an orbit cirlce and add it to the entity
       const orbit = this.createOrbitCircle(orbitRadius);
@@ -199,7 +167,7 @@ export abstract class Entity {
 
   public show() {
     if (this.params.onShow) {
-      this.params.onShow(this.id);
+      this.params.onShow(this.params.id);
     }
   }
 
@@ -234,7 +202,7 @@ export abstract class Entity {
     const colourMapImageData = colourMapContext.createImageData(this.textureWidth, this.textureHeight);
     const colourMapData = colourMapImageData.data;
 
-    const seed = [...this.params.baseSeed, 99999].reduce((acc, cur) => (acc += cur));
+    const seed = [...this.params.seed, 99999].reduce((acc, cur) => (acc += cur));
     const ng = new NoiseMapGenerator(seed);
     const noiseMap = ng.generateNoiseMap(this.textureWidth, this.textureHeight);
 
@@ -308,7 +276,7 @@ export abstract class Entity {
     return new Line(this.orbitGeometry, this.orbit);
   }
 
-  private addLabel() {
+  protected addLabel() {
     this.labelContext = document.createElement("canvas").getContext("2d") as CanvasRenderingContext2D;
 
     const fontSize = 44;
@@ -321,7 +289,7 @@ export abstract class Entity {
 
     this.labelContext.fillStyle = "white";
     this.labelContext.textAlign = "center";
-    this.labelContext.fillText(this.name, this.labelContext.canvas.width / 2, fontSize + 1);
+    this.labelContext.fillText(this.params.name, this.labelContext.canvas.width / 2, fontSize + 1);
 
     this.labelTexture = new Texture(this.labelContext.canvas);
     this.labelTexture.needsUpdate = true;

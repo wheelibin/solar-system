@@ -13,7 +13,7 @@ export const App: React.FC<Props> = ({ solarSystemApp }) => {
   const [selectedPlanet, setSelectedPlanet] = useState<SolarSystemEntity | undefined>(undefined);
 
   useEffect(() => {
-    solarSystemApp.init();
+    solarSystemApp.init(false);
     solarSystemApp.onInitialising = handleInitialising;
     solarSystemApp.onInitialised = handleInitialised;
     solarSystemApp.onSelectPlanet = handleSelectPlanet;

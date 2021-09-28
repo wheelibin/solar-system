@@ -32,3 +32,10 @@ code {
   display: flex;
   justify-content: space-between;
 }
+
+#new-seed-button .property-name {
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center;
+  width: 100%;
+}

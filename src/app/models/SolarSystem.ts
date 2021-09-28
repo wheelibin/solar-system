@@ -1,10 +1,11 @@
 export type SolarSystemEntity = {
   id: number;
   name: string;
+  entityType: EntityType;
   seed: number[];
   radius: number;
   terrainHeight: number;
-  moons: SolarSystemEntity[];
+  satellites: SolarSystemEntity[];
   orbitEntityId: number;
   orbitRadius: number;
   orbitDirection: number;
@@ -19,9 +20,19 @@ export type SolarSystemEntity = {
   positionInSystem?: number;
   position?: [number, number, number];
   rgb?: [number, number, number];
+
+  // for multi item entities (e.g. asteroid belt)
+  maxRadius?: number;
+  itemCount?: number;
 };
 
 export type SolarSystem = {
   stars: SolarSystemEntity[];
-  planets: SolarSystemEntity[];
 };
+
+export enum EntityType {
+  Star,
+  Planet,
+  Moon,
+  AsteroidBelt,
+}

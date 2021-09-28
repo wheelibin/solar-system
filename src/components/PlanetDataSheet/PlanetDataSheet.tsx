@@ -13,7 +13,7 @@ export const PlanetDataSheet: React.FC<Props> = ({ planet }) => {
   const properties = [
     ["Name", planet.name],
     ["Diameter (km)", (planet.radius * 2).toLocaleString()],
-    ["Moons", planet.moons.length],
+    ["Moons", planet.satellites.length],
     ["Orbit Distance (km)", planet.orbitRadius.toLocaleString()],
     ["Orbital Speed (km/h)", Math.floor(planet.orbitSpeed).toLocaleString()],
     ["Orbital Inclanation (°)", planet.orbitInclanation],
