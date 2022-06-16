@@ -10,10 +10,6 @@ import {
   Euler,
   Quaternion,
   Vector3,
-  BufferAttribute,
-  BufferGeometry,
-  Line,
-  LineBasicMaterial,
 } from "three";
 import { Random } from "../utils/Random";
 import { seedIndexes } from "../utils/SolarSystemGenerator";
@@ -42,8 +38,6 @@ export class AsteroidBelt extends Entity {
         map: this.colourMapTexture,
         displacementMap: this.heightMapTexture,
         displacementScale: terrainHeight,
-        // shininess: 0,
-        // specular: 0x000000,
       });
     } else {
       if (this.params.texturePath) {
@@ -113,15 +107,6 @@ export class AsteroidBelt extends Entity {
 
     if (this.params.orbitEntity) {
       const orbitEntityPos = this.params.orbitEntity.sphere.position;
-      // const orbitRadius = this.params.orbitRadius;
-
-      // // create an orbit cirlce and add it to the entity
-      // const orbit = this._createOrbitCircle(orbitRadius);
-      // this.entity.add(orbit);
-
-      // const orbit2 = this._createOrbitCircle(orbitRadius + orbitRadius * 0.2);
-      // this.entity.add(orbit2);
-
       // position the whole entity at the orbit entity position
       this.entity.position.set(orbitEntityPos.x, orbitEntityPos.y, orbitEntityPos.z);
 
@@ -146,19 +131,4 @@ export class AsteroidBelt extends Entity {
 
     return [rgba[0] * ratio, rgba[1] * ratio, rgba[2] * ratio, rgba[3]];
   }
-
-  // private _createOrbitCircle(radius: number) {
-  //   var segmentCount = 128;
-  //   this.orbitGeometry = new BufferGeometry();
-  //   const verts = [];
-  //   this.orbit = new LineBasicMaterial({ color: 0xff0000, opacity: 1, transparent: false });
-
-  //   for (var i = 0; i <= segmentCount; i++) {
-  //     var theta = (i / segmentCount) * Math.PI * 2;
-  //     verts.push(Math.cos(theta) * radius, 0, Math.sin(theta) * radius);
-  //   }
-  //   const vertices = new Float32Array(verts);
-  //   this.orbitGeometry.setAttribute("position", new BufferAttribute(vertices, 3));
-  //   return new Line(this.orbitGeometry, this.orbit);
-  // }
 }

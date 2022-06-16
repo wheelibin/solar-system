@@ -1,6 +1,5 @@
 import {
   AmbientLight,
-  // AxesHelper,
   Camera,
   Clock,
   Color,
@@ -19,7 +18,7 @@ import cloneDeep from "lodash/cloneDeep";
 import { Entity } from "./entities/Entity";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { GUI } from "three/examples/jsm/libs/dat.gui.module";
+import { GUI } from "dat.gui";
 
 import { SolarSystemGenerator } from "./utils/SolarSystemGenerator";
 
@@ -118,6 +117,7 @@ export class SolarSystemApp {
     this.renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       antialias: true,
+      logarithmicDepthBuffer: true,
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
